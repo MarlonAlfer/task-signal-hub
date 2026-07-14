@@ -11,7 +11,7 @@ import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, star
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
-import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays } from "lucide-react";
+import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
