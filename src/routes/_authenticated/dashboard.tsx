@@ -134,18 +134,59 @@ function Dashboard() {
     setStatus(taskId, "done");
   }
 
-  // Group due-today tasks
-  const grouped = useMemo(() => {
+  // Split tasks: highlighted (daily + today's weekly) vs other (quinzenal/mensal/semestral)
+  const highlightedTasks = useMemo(
+    () => dueToday.filter((t) => t.category === "diaria" || t.category === "semanal"),
+    [dueToday]
+  );
+  const otherTasks = useMemo(
+    () => tasks.filter((t) => t.category === "quinzenal" || t.category === "mensal" || t.category === "semestral"),
+    [tasks]
+  );
+
+  const highlightGrouped = useMemo(() => {
     const g: Record<string, TaskRow[]> = {};
-    for (const t of dueToday) {
+    for (const t of highlightedTasks) {
       const key =
-        t.category === "diaria" ? CATEGORY_LABELS.diaria
-        : t.category === "semanal" ? `${CATEGORY_LABELS.semanal} · ${WEEKDAY_LABELS[t.weekday ?? 0] ?? ""}`
-        : CATEGORY_LABELS[t.category];
+        t.category === "diaria"
+          ? CATEGORY_LABELS.diaria
+          : `${CATEGORY_LABELS.semanal} · ${WEEKDAY_LABELS[t.weekday ?? 0] ?? ""}`;
       (g[key] ??= []).push(t);
     }
     return g;
-  }, [dueToday]);
+  }, [highlightedTasks]);
+
+  const otherGrouped = useMemo(() => {
+    const g: Record<string, TaskRow[]> = {};
+    for (const t of otherTasks) {
+      const key = CATEGORY_LABELS[t.category];
+      (g[key] ??= []).push(t);
+    }
+    return g;
+  }, [otherTasks]);
+
+  // Monthly floating alert — first business day of the month, until acknowledged
+  const [monthAlertOpen, setMonthAlertOpen] = useState(false);
+  useEffect(() => {
+    if (!tasksQ.data) return;
+    if (typeof window === "undefined") return;
+    if (!isFirstBusinessDayOfMonth()) return;
+    const now = new Date();
+    const key = `wp-month-alert-${now.getFullYear()}-${now.getMonth() + 1}`;
+    if (localStorage.getItem(key)) return;
+    const pendingMensal = otherTasks.filter(
+      (t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done"
+    );
+    if (pendingMensal.length > 0) setMonthAlertOpen(true);
+  }, [tasksQ.data, otherTasks, statusById]);
+
+  function ackMonthAlert() {
+    const now = new Date();
+    const key = `wp-month-alert-${now.getFullYear()}-${now.getMonth() + 1}`;
+    if (typeof window !== "undefined") localStorage.setItem(key, "1");
+    setMonthAlertOpen(false);
+  }
+
 
   async function signOut() {
     await qc.cancelQueries();
