@@ -11,7 +11,7 @@ import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, star
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
-import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays } from "lucide-react";
+import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -148,10 +148,7 @@ function Dashboard() {
   const highlightGrouped = useMemo(() => {
     const g: Record<string, TaskRow[]> = {};
     for (const t of highlightedTasks) {
-      const key =
-        t.category === "diaria"
-          ? CATEGORY_LABELS.diaria
-          : `${CATEGORY_LABELS.semanal} · ${WEEKDAY_LABELS[t.weekday ?? 0] ?? ""}`;
+      const key = t.category === "diaria" ? CATEGORY_LABELS.diaria : CATEGORY_LABELS.semanal;
       (g[key] ??= []).push(t);
     }
     return g;
@@ -206,6 +203,7 @@ function Dashboard() {
 
   // Preview tasks for another weekday
   const [previewWd, setPreviewWd] = useState<string>("");
+  const [previewOpen, setPreviewOpen] = useState<boolean>(true);
   const previewTasks = useMemo(() => {
     if (!previewWd) return [];
     const n = Number(previewWd);
@@ -222,19 +220,19 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen relative">
-      {/* Background progress ring — sofisticated, semi-transparent */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 flex items-center justify-center z-0 overflow-hidden">
-        <div className="relative opacity-[0.07] blur-[0.5px]">
-          <svg width="640" height="640" viewBox="0 0 200 200">
+      {/* Floating progress ring — 30% opacity, corner widget */}
+      <div aria-hidden className="pointer-events-none fixed bottom-4 left-4 z-40 opacity-30">
+        <div className="relative rounded-full bg-background/40 backdrop-blur-sm shadow-lg">
+          <svg width="140" height="140" viewBox="0 0 200 200">
             <circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground" />
             <circle
               cx="100" cy="100" r="88" fill="none"
-              stroke="currentColor" strokeWidth="10" strokeLinecap="round"
+              stroke="currentColor" strokeWidth="14" strokeLinecap="round"
               className={pct === 100 ? "text-status-green" : pct >= 50 ? "text-status-yellow" : "text-status-red"}
               strokeDasharray={`${(pct / 100) * 2 * Math.PI * 88} ${2 * Math.PI * 88}`}
               transform="rotate(-90 100 100)"
             />
-            <text x="100" y="108" textAnchor="middle" fontSize="42" fontWeight="800" fill="currentColor" className="text-foreground">
+            <text x="100" y="115" textAnchor="middle" fontSize="52" fontWeight="800" fill="currentColor" className="text-foreground">
               {pct}%
             </text>
           </svg>
@@ -284,36 +282,53 @@ function Dashboard() {
         {/* Preview de tarefas de outro dia da semana */}
         <section className="card-elevated rounded-xl p-4">
           <div className="flex flex-wrap items-center gap-3">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">Ver tarefas de outro dia</h2>
-            <div className="ml-auto min-w-[200px]">
-              <Select value={previewWd} onValueChange={setPreviewWd}>
-                <SelectTrigger><SelectValue placeholder="Selecionar dia da semana" /></SelectTrigger>
-                <SelectContent>
-                  {[1,2,3,4,5,6].map((n) => (
-                    <SelectItem key={n} value={String(n)}>{WEEKDAY_LABELS[n]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <button
+              type="button"
+              onClick={() => setPreviewOpen((v) => !v)}
+              className="flex items-center gap-2 hover:opacity-80"
+              aria-expanded={previewOpen}
+            >
+              {previewOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold">Ver / adiantar tarefas de outro dia</h2>
+            </button>
+            {previewOpen && (
+              <div className="ml-auto min-w-[200px]">
+                <Select value={previewWd} onValueChange={setPreviewWd}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar dia da semana" /></SelectTrigger>
+                  <SelectContent>
+                    {[1,2,3,4,5,6].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{WEEKDAY_LABELS[n]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
-          {previewWd && (
+          {previewOpen && previewWd && (
             <div className="mt-4 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Marque para registrar a conclusão em <strong>hoje</strong> (adiantar/atrasar).
+              </p>
               {Object.keys(previewGrouped).length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma tarefa programada para {WEEKDAY_LABELS[Number(previewWd)]}.</p>
               ) : (
                 Object.entries(previewGrouped).map(([sub, list]) => (
                   <div key={sub}>
-                    {sub !== "Geral" && <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{sub}</h3>}
-                    <ul className="text-sm space-y-1">
+                    {sub !== "Geral" && <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{sub}</h3>}
+                    <div className="space-y-2">
                       {list.map((t) => (
-                        <li key={t.id} className="flex items-start gap-2 text-muted-foreground">
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-status-yellow shrink-0" />
-                          <span>{t.title}</span>
-                          {t.category === "diaria" && <Badge variant="outline" className="ml-1 text-[10px]">diária</Badge>}
-                        </li>
+                        <TrafficTaskItem
+                          key={t.id}
+                          title={t.title}
+                          group={t.category === "diaria" ? "diária" : null}
+                          status={statusById.get(t.id) ?? "pending"}
+                          disabled={!canEdit}
+                          onCycle={() => cycle(t.id)}
+                          onComplete={() => complete(t.id)}
+                        />
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 ))
               )}
@@ -343,7 +358,12 @@ function Dashboard() {
           }, {});
           return (
             <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
-              <h2 className="text-lg font-semibold mb-4">{groupKey}</h2>
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
+                {groupKey === CATEGORY_LABELS.semanal && (
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{WEEKDAY_LABELS[wd]}</p>
+                )}
+              </div>
               <div className="space-y-4">
                 {Object.entries(bySub).map(([sub, tasksSub]) => (
                   <div key={sub}>
