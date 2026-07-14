@@ -38,7 +38,7 @@ export function TrafficTaskItem({ status, title, group, disabled, onCycle, onCom
     >
       <span className="mt-0.5">
         {status === "done" ? <Check className="h-5 w-5 text-status-green" />
-        : status === "in_progress" ? <Loader2 className="h-5 w-5 text-status-yellow animate-spin-slow" />
+        : status === "in_progress" ? <Loader2 className="h-5 w-5 text-status-yellow animate-spin" style={{ animationDuration: "3s" }} />
         : <Circle className="h-5 w-5 text-status-red" />}
       </span>
       <span className="flex-1">
