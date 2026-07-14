@@ -287,8 +287,9 @@ function Dashboard() {
             </div>
             <div>
               <h1 className="text-lg font-bold leading-tight">WorkPulse</h1>
-              <p className="text-xs text-muted-foreground">
-                {wd === 0 ? "Domingo — sem tarefas programadas" : WEEKDAY_LABELS[wd]}
+              <p className="text-xs text-muted-foreground flex items-center gap-2">
+                <span>{wd === 0 ? "Domingo — sem tarefas programadas" : WEEKDAY_LABELS[wd]}</span>
+                <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">Hoje</span>
               </p>
             </div>
           </div>
