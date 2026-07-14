@@ -281,36 +281,53 @@ function Dashboard() {
         {/* Preview de tarefas de outro dia da semana */}
         <section className="card-elevated rounded-xl p-4">
           <div className="flex flex-wrap items-center gap-3">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">Ver tarefas de outro dia</h2>
-            <div className="ml-auto min-w-[200px]">
-              <Select value={previewWd} onValueChange={setPreviewWd}>
-                <SelectTrigger><SelectValue placeholder="Selecionar dia da semana" /></SelectTrigger>
-                <SelectContent>
-                  {[1,2,3,4,5,6].map((n) => (
-                    <SelectItem key={n} value={String(n)}>{WEEKDAY_LABELS[n]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <button
+              type="button"
+              onClick={() => setPreviewOpen((v) => !v)}
+              className="flex items-center gap-2 hover:opacity-80"
+              aria-expanded={previewOpen}
+            >
+              {previewOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold">Ver / adiantar tarefas de outro dia</h2>
+            </button>
+            {previewOpen && (
+              <div className="ml-auto min-w-[200px]">
+                <Select value={previewWd} onValueChange={setPreviewWd}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar dia da semana" /></SelectTrigger>
+                  <SelectContent>
+                    {[1,2,3,4,5,6].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{WEEKDAY_LABELS[n]}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
-          {previewWd && (
+          {previewOpen && previewWd && (
             <div className="mt-4 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Marque para registrar a conclusão em <strong>hoje</strong> (adiantar/atrasar).
+              </p>
               {Object.keys(previewGrouped).length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma tarefa programada para {WEEKDAY_LABELS[Number(previewWd)]}.</p>
               ) : (
                 Object.entries(previewGrouped).map(([sub, list]) => (
                   <div key={sub}>
-                    {sub !== "Geral" && <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{sub}</h3>}
-                    <ul className="text-sm space-y-1">
+                    {sub !== "Geral" && <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{sub}</h3>}
+                    <div className="space-y-2">
                       {list.map((t) => (
-                        <li key={t.id} className="flex items-start gap-2 text-muted-foreground">
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-status-yellow shrink-0" />
-                          <span>{t.title}</span>
-                          {t.category === "diaria" && <Badge variant="outline" className="ml-1 text-[10px]">diária</Badge>}
-                        </li>
+                        <TrafficTaskItem
+                          key={t.id}
+                          title={t.title}
+                          group={t.category === "diaria" ? "diária" : null}
+                          status={statusById.get(t.id) ?? "pending"}
+                          disabled={!canEdit}
+                          onCycle={() => cycle(t.id)}
+                          onComplete={() => complete(t.id)}
+                        />
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 ))
               )}
