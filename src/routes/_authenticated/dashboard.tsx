@@ -204,6 +204,9 @@ function Dashboard() {
   // Preview tasks for another weekday
   const [previewWd, setPreviewWd] = useState<string>("");
   const [previewOpen, setPreviewOpen] = useState<boolean>(true);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const isOpen = (k: string) => !collapsed[k];
+  const toggle = (k: string) => setCollapsed((c) => ({ ...c, [k]: !c[k] }));
   const previewTasks = useMemo(() => {
     if (!previewWd) return [];
     const n = Number(previewWd);
