@@ -249,20 +249,21 @@ function Dashboard() {
           </div>
         )}
 
-        {Object.keys(grouped).length === 0 && wd !== 0 && !tasksQ.isLoading && (
+        {Object.keys(highlightGrouped).length === 0 && wd !== 0 && !tasksQ.isLoading && (
           <div className="card-elevated rounded-lg p-6 text-center text-muted-foreground">
             Nenhuma tarefa para hoje.
           </div>
         )}
 
-        {Object.entries(grouped).map(([groupKey, list]) => {
+        {/* Destaque: diárias + dia da semana */}
+        {Object.entries(highlightGrouped).map(([groupKey, list]) => {
           const bySub = list.reduce<Record<string, TaskRow[]>>((acc, t) => {
             const k = t.group_label ?? "Geral";
             (acc[k] ??= []).push(t);
             return acc;
           }, {});
           return (
-            <section key={groupKey} className="card-elevated rounded-xl p-5">
+            <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
               <h2 className="text-lg font-semibold mb-4">{groupKey}</h2>
               <div className="space-y-4">
                 {Object.entries(bySub).map(([sub, tasksSub]) => (
@@ -287,6 +288,41 @@ function Dashboard() {
             </section>
           );
         })}
+
+        {/* Quadro menor: outras periodicidades */}
+        {Object.keys(otherGrouped).length > 0 && (
+          <section className="card-elevated rounded-xl p-4 opacity-90">
+            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
+            <div className="grid gap-4 md:grid-cols-3">
+              {Object.entries(otherGrouped).map(([groupKey, list]) => (
+                <div key={groupKey} className="rounded-lg border border-border p-3">
+                  <h3 className="text-xs font-semibold mb-2">{groupKey}</h3>
+                  <ul className="space-y-1 text-xs">
+                    {list.map((t) => {
+                      const s = statusById.get(t.id) ?? "pending";
+                      const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
+                      return (
+                        <li key={t.id} className="flex items-start gap-2">
+                          <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s === "done" ? "bg-status-green" : s === "in_progress" ? "bg-status-yellow" : "bg-status-red"}`} />
+                          <button
+                            type="button"
+                            disabled={!canEdit}
+                            onClick={() => cycle(t.id)}
+                            onDoubleClick={() => complete(t.id)}
+                            className={`text-left ${tone} disabled:cursor-not-allowed`}
+                          >
+                            {t.title}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
 
         <p className="text-xs text-muted-foreground text-center pt-4">
           Um clique alterna <span className="text-status-yellow">Em andamento</span>. Dois cliques marcam como <span className="text-status-green">Concluída</span>.
