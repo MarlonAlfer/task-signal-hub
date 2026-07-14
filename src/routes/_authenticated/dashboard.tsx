@@ -353,7 +353,12 @@ function Dashboard() {
                   <SelectTrigger><SelectValue placeholder="Selecionar dia da semana" /></SelectTrigger>
                   <SelectContent>
                     {[1,2,3,4,5,6].map((n) => (
-                      <SelectItem key={n} value={String(n)}>{WEEKDAY_LABELS[n]}</SelectItem>
+                      <SelectItem key={n} value={String(n)}>
+                        <span className="flex items-center gap-2">
+                          {WEEKDAY_LABELS[n]}
+                          {n === wd && <span className="rounded-full bg-status-green/20 text-status-green px-1.5 py-0.5 text-[9px] font-bold uppercase">Hoje</span>}
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
