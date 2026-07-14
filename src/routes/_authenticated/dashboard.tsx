@@ -275,11 +275,24 @@ function Dashboard() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Tarefas de hoje" value={stats.total} icon={<ClipboardList className="h-4 w-4" />} />
-          <StatCard label="Pendentes" value={stats.pending} tone="red" />
-          <StatCard label="Em andamento" value={stats.inProgress} tone="yellow" />
-          <StatCard label="Concluídas" value={stats.done} tone="green" />
+        <section>
+          <button
+            type="button"
+            onClick={() => toggle("stats")}
+            className="flex items-center gap-2 mb-3 hover:opacity-80"
+            aria-expanded={isOpen("stats")}
+          >
+            {isOpen("stats") ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Resumo do dia</h2>
+          </button>
+          {isOpen("stats") && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <StatCard label="Tarefas de hoje" value={stats.total} icon={<ClipboardList className="h-4 w-4" />} />
+              <StatCard label="Pendentes" value={stats.pending} tone="red" />
+              <StatCard label="Em andamento" value={stats.inProgress} tone="yellow" />
+              <StatCard label="Concluídas" value={stats.done} tone="green" />
+            </div>
+          )}
         </section>
 
         {/* Preview de tarefas de outro dia da semana */}
