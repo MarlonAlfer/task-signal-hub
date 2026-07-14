@@ -11,8 +11,9 @@ import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, star
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
-import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight } from "lucide-react";
+import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, UserCog } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -45,6 +46,39 @@ function Dashboard() {
       return data ?? [];
     },
   });
+
+  const profileQ = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+      const { data, error } = await supabase.from("profiles").select("id, display_name, email").eq("id", u.user.id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (profileQ.data?.display_name) setProfileName(profileQ.data.display_name);
+  }, [profileQ.data?.display_name]);
+
+  async function saveProfile() {
+    const name = profileName.trim();
+    if (!name) return toast.error("Nome não pode ficar vazio.");
+    setSavingProfile(true);
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) { setSavingProfile(false); return; }
+    const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", u.user.id);
+    setSavingProfile(false);
+    if (error) return toast.error(error.message);
+    toast.success("Nome atualizado.");
+    qc.invalidateQueries({ queryKey: ["profile"] });
+    setProfileOpen(false);
+  }
 
   // Weekly pending (Mon..now) for the Friday alert
   const weekPendingQ = useQuery({
@@ -259,6 +293,10 @@ function Dashboard() {
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="max-w-[160px] truncate">
+              <UserCog className="h-4 w-4 mr-2 shrink-0" />
+              <span className="truncate">{profileQ.data?.display_name ?? "Perfil"}</span>
+            </Button>
             <Badge variant="outline" className="uppercase text-xs">
               {role === "admin" ? "Administrador" : role === "user" ? "Usuário" : "Visitante"}
             </Badge>
@@ -519,6 +557,29 @@ function Dashboard() {
         </div>
       )}
 
+
+      {/* Edit profile dialog */}
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" /> Editar perfil</DialogTitle>
+            <DialogDescription>Atualize o seu nome de exibição.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Nome de exibição</label>
+              <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Seu nome" maxLength={80} />
+            </div>
+            {profileQ.data?.email && (
+              <p className="text-xs text-muted-foreground">Email: {profileQ.data.email}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setProfileOpen(false)}>Cancelar</Button>
+            <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Salvando…" : "Salvar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Opening dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
