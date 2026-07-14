@@ -204,6 +204,9 @@ function Dashboard() {
   // Preview tasks for another weekday
   const [previewWd, setPreviewWd] = useState<string>("");
   const [previewOpen, setPreviewOpen] = useState<boolean>(true);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const isOpen = (k: string) => !collapsed[k];
+  const toggle = (k: string) => setCollapsed((c) => ({ ...c, [k]: !c[k] }));
   const previewTasks = useMemo(() => {
     if (!previewWd) return [];
     const n = Number(previewWd);
@@ -272,11 +275,24 @@ function Dashboard() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Tarefas de hoje" value={stats.total} icon={<ClipboardList className="h-4 w-4" />} />
-          <StatCard label="Pendentes" value={stats.pending} tone="red" />
-          <StatCard label="Em andamento" value={stats.inProgress} tone="yellow" />
-          <StatCard label="Concluídas" value={stats.done} tone="green" />
+        <section>
+          <button
+            type="button"
+            onClick={() => toggle("stats")}
+            className="flex items-center gap-2 mb-3 hover:opacity-80"
+            aria-expanded={isOpen("stats")}
+          >
+            {isOpen("stats") ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Resumo do dia</h2>
+          </button>
+          {isOpen("stats") && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <StatCard label="Tarefas de hoje" value={stats.total} icon={<ClipboardList className="h-4 w-4" />} />
+              <StatCard label="Pendentes" value={stats.pending} tone="red" />
+              <StatCard label="Em andamento" value={stats.inProgress} tone="yellow" />
+              <StatCard label="Concluídas" value={stats.done} tone="green" />
+            </div>
+          )}
         </section>
 
         {/* Preview de tarefas de outro dia da semana */}
@@ -356,34 +372,61 @@ function Dashboard() {
             (acc[k] ??= []).push(t);
             return acc;
           }, {});
+          const sectionKey = `hl:${groupKey}`;
           return (
             <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
-                {groupKey === CATEGORY_LABELS.semanal && (
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{WEEKDAY_LABELS[wd]}</p>
-                )}
-              </div>
-              <div className="space-y-4">
-                {Object.entries(bySub).map(([sub, tasksSub]) => (
-                  <div key={sub}>
-                    {sub !== "Geral" && <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{sub}</h3>}
-                    <div className="space-y-2">
-                      {tasksSub.map((t) => (
-                        <TrafficTaskItem
-                          key={t.id}
-                          title={t.title}
-                          group={null}
-                          status={statusById.get(t.id) ?? "pending"}
-                          disabled={!canEdit}
-                          onCycle={() => cycle(t.id)}
-                          onComplete={() => complete(t.id)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => toggle(sectionKey)}
+                className="w-full flex items-start gap-2 mb-4 text-left hover:opacity-80"
+                aria-expanded={isOpen(sectionKey)}
+              >
+                {isOpen(sectionKey) ? <ChevronDown className="h-5 w-5 mt-1 shrink-0" /> : <ChevronRight className="h-5 w-5 mt-1 shrink-0" />}
+                <div>
+                  <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
+                  {groupKey === CATEGORY_LABELS.semanal && (
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{WEEKDAY_LABELS[wd]}</p>
+                  )}
+                </div>
+                <span className="ml-auto text-xs text-muted-foreground">{list.length}</span>
+              </button>
+              {isOpen(sectionKey) && (
+                <div className="space-y-4">
+                  {Object.entries(bySub).map(([sub, tasksSub]) => {
+                    const subKey = `${sectionKey}:${sub}`;
+                    return (
+                      <div key={sub}>
+                        {sub !== "Geral" && (
+                          <button
+                            type="button"
+                            onClick={() => toggle(subKey)}
+                            className="flex items-center gap-1 mb-2 hover:opacity-80"
+                            aria-expanded={isOpen(subKey)}
+                          >
+                            {isOpen(subKey) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                            <h3 className="text-xs uppercase tracking-wider text-muted-foreground">{sub}</h3>
+                          </button>
+                        )}
+                        {isOpen(subKey) && (
+                          <div className="space-y-2">
+                            {tasksSub.map((t) => (
+                              <TrafficTaskItem
+                                key={t.id}
+                                title={t.title}
+                                group={null}
+                                status={statusById.get(t.id) ?? "pending"}
+                                disabled={!canEdit}
+                                onCycle={() => cycle(t.id)}
+                                onComplete={() => complete(t.id)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           );
         })}
@@ -391,34 +434,58 @@ function Dashboard() {
         {/* Quadro menor: outras periodicidades */}
         {Object.keys(otherGrouped).length > 0 && (
           <section className="card-elevated rounded-xl p-4 opacity-90">
-            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
+            <button
+              type="button"
+              onClick={() => toggle("other")}
+              className="flex items-center gap-2 mb-3 hover:opacity-80"
+              aria-expanded={isOpen("other")}
+            >
+              {isOpen("other") ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
+            </button>
+            {isOpen("other") && (
             <div className="grid gap-4 md:grid-cols-3">
-              {Object.entries(otherGrouped).map(([groupKey, list]) => (
+              {Object.entries(otherGrouped).map(([groupKey, list]) => {
+                const k = `other:${groupKey}`;
+                return (
                 <div key={groupKey} className="rounded-lg border border-border p-3">
-                  <h3 className="text-xs font-semibold mb-2">{groupKey}</h3>
-                  <ul className="space-y-1 text-xs">
-                    {list.map((t) => {
-                      const s = statusById.get(t.id) ?? "pending";
-                      const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
-                      return (
-                        <li key={t.id} className="flex items-start gap-2">
-                          <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s === "done" ? "bg-status-green" : s === "in_progress" ? "bg-status-yellow" : "bg-status-red"}`} />
-                          <button
-                            type="button"
-                            disabled={!canEdit}
-                            onClick={() => cycle(t.id)}
-                            onDoubleClick={() => complete(t.id)}
-                            className={`text-left ${tone} disabled:cursor-not-allowed`}
-                          >
-                            {t.title}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => toggle(k)}
+                    className="w-full flex items-center gap-1 mb-2 hover:opacity-80"
+                    aria-expanded={isOpen(k)}
+                  >
+                    {isOpen(k) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                    <h3 className="text-xs font-semibold">{groupKey}</h3>
+                    <span className="ml-auto text-[10px] text-muted-foreground">{list.length}</span>
+                  </button>
+                  {isOpen(k) && (
+                    <ul className="space-y-1 text-xs">
+                      {list.map((t) => {
+                        const s = statusById.get(t.id) ?? "pending";
+                        const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
+                        return (
+                          <li key={t.id} className="flex items-start gap-2">
+                            <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s === "done" ? "bg-status-green" : s === "in_progress" ? "bg-status-yellow" : "bg-status-red"}`} />
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => cycle(t.id)}
+                              onDoubleClick={() => complete(t.id)}
+                              className={`text-left ${tone} disabled:cursor-not-allowed`}
+                            >
+                              {t.title}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
+            )}
           </section>
         )}
 
