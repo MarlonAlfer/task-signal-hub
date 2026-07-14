@@ -203,6 +203,7 @@ function Dashboard() {
 
   // Preview tasks for another weekday
   const [previewWd, setPreviewWd] = useState<string>("");
+  const [previewOpen, setPreviewOpen] = useState<boolean>(true);
   const previewTasks = useMemo(() => {
     if (!previewWd) return [];
     const n = Number(previewWd);
