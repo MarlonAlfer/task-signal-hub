@@ -372,37 +372,94 @@ function Dashboard() {
             (acc[k] ??= []).push(t);
             return acc;
           }, {});
+          const sectionKey = `hl:${groupKey}`;
           return (
             <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
-                {groupKey === CATEGORY_LABELS.semanal && (
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{WEEKDAY_LABELS[wd]}</p>
-                )}
-              </div>
-              <div className="space-y-4">
-                {Object.entries(bySub).map(([sub, tasksSub]) => (
-                  <div key={sub}>
-                    {sub !== "Geral" && <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{sub}</h3>}
-                    <div className="space-y-2">
-                      {tasksSub.map((t) => (
-                        <TrafficTaskItem
-                          key={t.id}
-                          title={t.title}
-                          group={null}
-                          status={statusById.get(t.id) ?? "pending"}
-                          disabled={!canEdit}
-                          onCycle={() => cycle(t.id)}
-                          onComplete={() => complete(t.id)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => toggle(sectionKey)}
+                className="w-full flex items-start gap-2 mb-4 text-left hover:opacity-80"
+                aria-expanded={isOpen(sectionKey)}
+              >
+                {isOpen(sectionKey) ? <ChevronDown className="h-5 w-5 mt-1 shrink-0" /> : <ChevronRight className="h-5 w-5 mt-1 shrink-0" />}
+                <div>
+                  <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
+                  {groupKey === CATEGORY_LABELS.semanal && (
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{WEEKDAY_LABELS[wd]}</p>
+                  )}
+                </div>
+                <span className="ml-auto text-xs text-muted-foreground">{list.length}</span>
+              </button>
+              {isOpen(sectionKey) && (
+                <div className="space-y-4">
+                  {Object.entries(bySub).map(([sub, tasksSub]) => {
+                    const subKey = `${sectionKey}:${sub}`;
+                    return (
+                      <div key={sub}>
+                        {sub !== "Geral" && (
+                          <button
+                            type="button"
+                            onClick={() => toggle(subKey)}
+                            className="flex items-center gap-1 mb-2 hover:opacity-80"
+                            aria-expanded={isOpen(subKey)}
+                          >
+                            {isOpen(subKey) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                            <h3 className="text-xs uppercase tracking-wider text-muted-foreground">{sub}</h3>
+                          </button>
+                        )}
+                        {isOpen(subKey) && (
+                          <div className="space-y-2">
+                            {tasksSub.map((t) => (
+                              <TrafficTaskItem
+                                key={t.id}
+                                title={t.title}
+                                group={null}
+                                status={statusById.get(t.id) ?? "pending"}
+                                disabled={!canEdit}
+                                onCycle={() => cycle(t.id)}
+                                onComplete={() => complete(t.id)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           );
         })}
+
+        {/* Quadro menor: outras periodicidades */}
+        {Object.keys(otherGrouped).length > 0 && (
+          <section className="card-elevated rounded-xl p-4 opacity-90">
+            <button
+              type="button"
+              onClick={() => toggle("other")}
+              className="flex items-center gap-2 mb-3 hover:opacity-80"
+              aria-expanded={isOpen("other")}
+            >
+              {isOpen("other") ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
+            </button>
+            {isOpen("other") && (
+            <div className="grid gap-4 md:grid-cols-3">
+              {Object.entries(otherGrouped).map(([groupKey, list]) => {
+                const k = `other:${groupKey}`;
+                return (
+                <div key={groupKey} className="rounded-lg border border-border p-3">
+                  <button
+                    type="button"
+                    onClick={() => toggle(k)}
+                    className="w-full flex items-center gap-1 mb-2 hover:opacity-80"
+                    aria-expanded={isOpen(k)}
+                  >
+                    {isOpen(k) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                    <h3 className="text-xs font-semibold">{groupKey}</h3>
+                    <span className="ml-auto text-[10px] text-muted-foreground">{list.length}</span>
+                  </button>
+                  {isOpen(k) && (
 
         {/* Quadro menor: outras periodicidades */}
         {Object.keys(otherGrouped).length > 0 && (
