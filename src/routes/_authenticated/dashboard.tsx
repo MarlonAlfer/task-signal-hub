@@ -340,7 +340,12 @@ function Dashboard() {
           }, {});
           return (
             <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
-              <h2 className="text-lg font-semibold mb-4">{groupKey}</h2>
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
+                {groupKey === CATEGORY_LABELS.semanal && (
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{WEEKDAY_LABELS[wd]}</p>
+                )}
+              </div>
               <div className="space-y-4">
                 {Object.entries(bySub).map(([sub, tasksSub]) => (
                   <div key={sub}>
