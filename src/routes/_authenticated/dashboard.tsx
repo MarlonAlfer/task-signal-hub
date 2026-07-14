@@ -47,6 +47,39 @@ function Dashboard() {
     },
   });
 
+  const profileQ = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+      const { data, error } = await supabase.from("profiles").select("id, display_name, email").eq("id", u.user.id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (profileQ.data?.display_name) setProfileName(profileQ.data.display_name);
+  }, [profileQ.data?.display_name]);
+
+  async function saveProfile() {
+    const name = profileName.trim();
+    if (!name) return toast.error("Nome não pode ficar vazio.");
+    setSavingProfile(true);
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) { setSavingProfile(false); return; }
+    const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", u.user.id);
+    setSavingProfile(false);
+    if (error) return toast.error(error.message);
+    toast.success("Nome atualizado.");
+    qc.invalidateQueries({ queryKey: ["profile"] });
+    setProfileOpen(false);
+  }
+
   // Weekly pending (Mon..now) for the Friday alert
   const weekPendingQ = useQuery({
     queryKey: ["week-pending", startOfWeekISO()],
