@@ -558,6 +558,29 @@ function Dashboard() {
       )}
 
 
+      {/* Edit profile dialog */}
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" /> Editar perfil</DialogTitle>
+            <DialogDescription>Atualize o seu nome de exibição.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Nome de exibição</label>
+              <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Seu nome" maxLength={80} />
+            </div>
+            {profileQ.data?.email && (
+              <p className="text-xs text-muted-foreground">Email: {profileQ.data.email}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setProfileOpen(false)}>Cancelar</Button>
+            <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Salvando…" : "Salvar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Opening dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
