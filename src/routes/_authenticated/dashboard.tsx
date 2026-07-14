@@ -427,7 +427,9 @@ function Dashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
+
   );
 }
 
