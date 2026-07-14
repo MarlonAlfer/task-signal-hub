@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_audit_log_identity() FROM PUBLIC, anon, authenticated;
