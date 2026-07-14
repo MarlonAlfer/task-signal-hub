@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { TrafficTaskItem } from "@/components/TrafficTaskItem";
-import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, startOfWeekISO, isTaskDueToday } from "@/lib/task-utils";
+import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, startOfWeekISO, isTaskDueToday, isFirstBusinessDayOfMonth } from "@/lib/task-utils";
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
