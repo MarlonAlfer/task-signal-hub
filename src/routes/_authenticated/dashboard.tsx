@@ -460,38 +460,32 @@ function Dashboard() {
                     <span className="ml-auto text-[10px] text-muted-foreground">{list.length}</span>
                   </button>
                   {isOpen(k) && (
-
-        {/* Quadro menor: outras periodicidades */}
-        {Object.keys(otherGrouped).length > 0 && (
-          <section className="card-elevated rounded-xl p-4 opacity-90">
-            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
-            <div className="grid gap-4 md:grid-cols-3">
-              {Object.entries(otherGrouped).map(([groupKey, list]) => (
-                <div key={groupKey} className="rounded-lg border border-border p-3">
-                  <h3 className="text-xs font-semibold mb-2">{groupKey}</h3>
-                  <ul className="space-y-1 text-xs">
-                    {list.map((t) => {
-                      const s = statusById.get(t.id) ?? "pending";
-                      const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
-                      return (
-                        <li key={t.id} className="flex items-start gap-2">
-                          <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s === "done" ? "bg-status-green" : s === "in_progress" ? "bg-status-yellow" : "bg-status-red"}`} />
-                          <button
-                            type="button"
-                            disabled={!canEdit}
-                            onClick={() => cycle(t.id)}
-                            onDoubleClick={() => complete(t.id)}
-                            className={`text-left ${tone} disabled:cursor-not-allowed`}
-                          >
-                            {t.title}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                    <ul className="space-y-1 text-xs">
+                      {list.map((t) => {
+                        const s = statusById.get(t.id) ?? "pending";
+                        const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
+                        return (
+                          <li key={t.id} className="flex items-start gap-2">
+                            <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s === "done" ? "bg-status-green" : s === "in_progress" ? "bg-status-yellow" : "bg-status-red"}`} />
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => cycle(t.id)}
+                              onDoubleClick={() => complete(t.id)}
+                              className={`text-left ${tone} disabled:cursor-not-allowed`}
+                            >
+                              {t.title}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
+            )}
           </section>
         )}
 
