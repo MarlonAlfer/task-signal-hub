@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { TrafficTaskItem } from "@/components/TrafficTaskItem";
-import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, startOfWeekISO, isTaskDueToday } from "@/lib/task-utils";
+import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, startOfWeekISO, isTaskDueToday, isFirstBusinessDayOfMonth } from "@/lib/task-utils";
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
@@ -134,18 +134,59 @@ function Dashboard() {
     setStatus(taskId, "done");
   }
 
-  // Group due-today tasks
-  const grouped = useMemo(() => {
+  // Split tasks: highlighted (daily + today's weekly) vs other (quinzenal/mensal/semestral)
+  const highlightedTasks = useMemo(
+    () => dueToday.filter((t) => t.category === "diaria" || t.category === "semanal"),
+    [dueToday]
+  );
+  const otherTasks = useMemo(
+    () => tasks.filter((t) => t.category === "quinzenal" || t.category === "mensal" || t.category === "semestral"),
+    [tasks]
+  );
+
+  const highlightGrouped = useMemo(() => {
     const g: Record<string, TaskRow[]> = {};
-    for (const t of dueToday) {
+    for (const t of highlightedTasks) {
       const key =
-        t.category === "diaria" ? CATEGORY_LABELS.diaria
-        : t.category === "semanal" ? `${CATEGORY_LABELS.semanal} · ${WEEKDAY_LABELS[t.weekday ?? 0] ?? ""}`
-        : CATEGORY_LABELS[t.category];
+        t.category === "diaria"
+          ? CATEGORY_LABELS.diaria
+          : `${CATEGORY_LABELS.semanal} · ${WEEKDAY_LABELS[t.weekday ?? 0] ?? ""}`;
       (g[key] ??= []).push(t);
     }
     return g;
-  }, [dueToday]);
+  }, [highlightedTasks]);
+
+  const otherGrouped = useMemo(() => {
+    const g: Record<string, TaskRow[]> = {};
+    for (const t of otherTasks) {
+      const key = CATEGORY_LABELS[t.category];
+      (g[key] ??= []).push(t);
+    }
+    return g;
+  }, [otherTasks]);
+
+  // Monthly floating alert — first business day of the month, until acknowledged
+  const [monthAlertOpen, setMonthAlertOpen] = useState(false);
+  useEffect(() => {
+    if (!tasksQ.data) return;
+    if (typeof window === "undefined") return;
+    if (!isFirstBusinessDayOfMonth()) return;
+    const now = new Date();
+    const key = `wp-month-alert-${now.getFullYear()}-${now.getMonth() + 1}`;
+    if (localStorage.getItem(key)) return;
+    const pendingMensal = otherTasks.filter(
+      (t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done"
+    );
+    if (pendingMensal.length > 0) setMonthAlertOpen(true);
+  }, [tasksQ.data, otherTasks, statusById]);
+
+  function ackMonthAlert() {
+    const now = new Date();
+    const key = `wp-month-alert-${now.getFullYear()}-${now.getMonth() + 1}`;
+    if (typeof window !== "undefined") localStorage.setItem(key, "1");
+    setMonthAlertOpen(false);
+  }
+
 
   async function signOut() {
     await qc.cancelQueries();
@@ -208,20 +249,21 @@ function Dashboard() {
           </div>
         )}
 
-        {Object.keys(grouped).length === 0 && wd !== 0 && !tasksQ.isLoading && (
+        {Object.keys(highlightGrouped).length === 0 && wd !== 0 && !tasksQ.isLoading && (
           <div className="card-elevated rounded-lg p-6 text-center text-muted-foreground">
             Nenhuma tarefa para hoje.
           </div>
         )}
 
-        {Object.entries(grouped).map(([groupKey, list]) => {
+        {/* Destaque: diárias + dia da semana */}
+        {Object.entries(highlightGrouped).map(([groupKey, list]) => {
           const bySub = list.reduce<Record<string, TaskRow[]>>((acc, t) => {
             const k = t.group_label ?? "Geral";
             (acc[k] ??= []).push(t);
             return acc;
           }, {});
           return (
-            <section key={groupKey} className="card-elevated rounded-xl p-5">
+            <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
               <h2 className="text-lg font-semibold mb-4">{groupKey}</h2>
               <div className="space-y-4">
                 {Object.entries(bySub).map(([sub, tasksSub]) => (
@@ -247,10 +289,70 @@ function Dashboard() {
           );
         })}
 
+        {/* Quadro menor: outras periodicidades */}
+        {Object.keys(otherGrouped).length > 0 && (
+          <section className="card-elevated rounded-xl p-4 opacity-90">
+            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
+            <div className="grid gap-4 md:grid-cols-3">
+              {Object.entries(otherGrouped).map(([groupKey, list]) => (
+                <div key={groupKey} className="rounded-lg border border-border p-3">
+                  <h3 className="text-xs font-semibold mb-2">{groupKey}</h3>
+                  <ul className="space-y-1 text-xs">
+                    {list.map((t) => {
+                      const s = statusById.get(t.id) ?? "pending";
+                      const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
+                      return (
+                        <li key={t.id} className="flex items-start gap-2">
+                          <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s === "done" ? "bg-status-green" : s === "in_progress" ? "bg-status-yellow" : "bg-status-red"}`} />
+                          <button
+                            type="button"
+                            disabled={!canEdit}
+                            onClick={() => cycle(t.id)}
+                            onDoubleClick={() => complete(t.id)}
+                            className={`text-left ${tone} disabled:cursor-not-allowed`}
+                          >
+                            {t.title}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+
         <p className="text-xs text-muted-foreground text-center pt-4">
           Um clique alterna <span className="text-status-yellow">Em andamento</span>. Dois cliques marcam como <span className="text-status-green">Concluída</span>.
         </p>
       </main>
+
+      {/* Floating monthly alert — first business day of the month */}
+      {monthAlertOpen && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm card-elevated rounded-xl border-l-4 border-status-red p-4 shadow-2xl animate-in slide-in-from-bottom-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-status-red shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm mb-1">Tarefas mensais pendentes</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Hoje é o primeiro dia útil do mês. Existem tarefas mensais a realizar:
+              </p>
+              <ul className="text-xs space-y-1 mb-3 max-h-32 overflow-auto">
+                {otherTasks
+                  .filter((t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done")
+                  .slice(0, 6)
+                  .map((t) => (
+                    <li key={t.id} className="text-muted-foreground">• {t.title}</li>
+                  ))}
+              </ul>
+              <Button size="sm" onClick={ackMonthAlert} className="w-full">Estou ciente</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Opening dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
