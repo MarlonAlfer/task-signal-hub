@@ -329,6 +329,31 @@ function Dashboard() {
         </p>
       </main>
 
+      {/* Floating monthly alert — first business day of the month */}
+      {monthAlertOpen && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm card-elevated rounded-xl border-l-4 border-status-red p-4 shadow-2xl animate-in slide-in-from-bottom-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-status-red shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm mb-1">Tarefas mensais pendentes</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Hoje é o primeiro dia útil do mês. Existem tarefas mensais a realizar:
+              </p>
+              <ul className="text-xs space-y-1 mb-3 max-h-32 overflow-auto">
+                {otherTasks
+                  .filter((t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done")
+                  .slice(0, 6)
+                  .map((t) => (
+                    <li key={t.id} className="text-muted-foreground">• {t.title}</li>
+                  ))}
+              </ul>
+              <Button size="sm" onClick={ackMonthAlert} className="w-full">Estou ciente</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* Opening dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
