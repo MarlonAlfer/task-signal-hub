@@ -293,6 +293,10 @@ function Dashboard() {
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="max-w-[160px] truncate">
+              <UserCog className="h-4 w-4 mr-2 shrink-0" />
+              <span className="truncate">{profileQ.data?.display_name ?? "Perfil"}</span>
+            </Button>
             <Badge variant="outline" className="uppercase text-xs">
               {role === "admin" ? "Administrador" : role === "user" ? "Usuário" : "Visitante"}
             </Badge>
