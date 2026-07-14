@@ -202,9 +202,46 @@ function Dashboard() {
     inProgress: dueToday.filter((t) => statusById.get(t.id) === "in_progress").length,
     pending: dueToday.filter((t) => (statusById.get(t.id) ?? "pending") === "pending").length,
   };
+  const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+
+  // Preview tasks for another weekday
+  const [previewWd, setPreviewWd] = useState<string>("");
+  const previewTasks = useMemo(() => {
+    if (!previewWd) return [];
+    const n = Number(previewWd);
+    return tasks.filter((t) => t.category === "diaria" || (t.category === "semanal" && t.weekday === n));
+  }, [previewWd, tasks]);
+  const previewGrouped = useMemo(() => {
+    const g: Record<string, TaskRow[]> = {};
+    for (const t of previewTasks) {
+      const key = t.group_label ?? "Geral";
+      (g[key] ??= []).push(t);
+    }
+    return g;
+  }, [previewTasks]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      {/* Background progress ring — sofisticated, semi-transparent */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 flex items-center justify-center z-0 overflow-hidden">
+        <div className="relative opacity-[0.07] blur-[0.5px]">
+          <svg width="640" height="640" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground" />
+            <circle
+              cx="100" cy="100" r="88" fill="none"
+              stroke="currentColor" strokeWidth="10" strokeLinecap="round"
+              className={pct === 100 ? "text-status-green" : pct >= 50 ? "text-status-yellow" : "text-status-red"}
+              strokeDasharray={`${(pct / 100) * 2 * Math.PI * 88} ${2 * Math.PI * 88}`}
+              transform="rotate(-90 100 100)"
+            />
+            <text x="100" y="108" textAnchor="middle" fontSize="42" fontWeight="800" fill="currentColor" className="text-foreground">
+              {pct}%
+            </text>
+          </svg>
+        </div>
+      </div>
+      <div className="relative z-[1]">
+
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-4">
           <div className="flex items-center gap-3">
