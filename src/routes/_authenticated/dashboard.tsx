@@ -287,8 +287,9 @@ function Dashboard() {
             </div>
             <div>
               <h1 className="text-lg font-bold leading-tight">WorkPulse</h1>
-              <p className="text-xs text-muted-foreground">
-                {wd === 0 ? "Domingo — sem tarefas programadas" : WEEKDAY_LABELS[wd]}
+              <p className="text-xs text-muted-foreground flex items-center gap-2">
+                <span>{wd === 0 ? "Domingo — sem tarefas programadas" : WEEKDAY_LABELS[wd]}</span>
+                <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">Hoje</span>
               </p>
             </div>
           </div>
@@ -352,7 +353,12 @@ function Dashboard() {
                   <SelectTrigger><SelectValue placeholder="Selecionar dia da semana" /></SelectTrigger>
                   <SelectContent>
                     {[1,2,3,4,5,6].map((n) => (
-                      <SelectItem key={n} value={String(n)}>{WEEKDAY_LABELS[n]}</SelectItem>
+                      <SelectItem key={n} value={String(n)}>
+                        <span className="flex items-center gap-2">
+                          {WEEKDAY_LABELS[n]}
+                          {n === wd && <span className="rounded-full bg-status-green/20 text-status-green px-1.5 py-0.5 text-[9px] font-bold uppercase">Hoje</span>}
+                        </span>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -423,7 +429,10 @@ function Dashboard() {
                 <div>
                   <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
                   {groupKey === CATEGORY_LABELS.semanal && (
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{WEEKDAY_LABELS[wd]}</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1 flex items-center gap-2">
+                      <span>{WEEKDAY_LABELS[wd]}</span>
+                      <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold ring-1 ring-status-green/30">Hoje</span>
+                    </p>
                   )}
                 </div>
                 <span className="ml-auto text-xs text-muted-foreground">{list.length}</span>
