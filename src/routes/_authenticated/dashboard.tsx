@@ -281,6 +281,47 @@ function Dashboard() {
           <StatCard label="Concluídas" value={stats.done} tone="green" />
         </section>
 
+        {/* Preview de tarefas de outro dia da semana */}
+        <section className="card-elevated rounded-xl p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Ver tarefas de outro dia</h2>
+            <div className="ml-auto min-w-[200px]">
+              <Select value={previewWd} onValueChange={setPreviewWd}>
+                <SelectTrigger><SelectValue placeholder="Selecionar dia da semana" /></SelectTrigger>
+                <SelectContent>
+                  {[1,2,3,4,5,6].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{WEEKDAY_LABELS[n]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {previewWd && (
+            <div className="mt-4 space-y-3">
+              {Object.keys(previewGrouped).length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma tarefa programada para {WEEKDAY_LABELS[Number(previewWd)]}.</p>
+              ) : (
+                Object.entries(previewGrouped).map(([sub, list]) => (
+                  <div key={sub}>
+                    {sub !== "Geral" && <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{sub}</h3>}
+                    <ul className="text-sm space-y-1">
+                      {list.map((t) => (
+                        <li key={t.id} className="flex items-start gap-2 text-muted-foreground">
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-status-yellow shrink-0" />
+                          <span>{t.title}</span>
+                          {t.category === "diaria" && <Badge variant="outline" className="ml-1 text-[10px]">diária</Badge>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </section>
+
+
         {wd === 0 && (
           <div className="card-elevated rounded-lg p-6 text-center">
             <p className="text-muted-foreground">Hoje é domingo — nenhuma tarefa está programada. Aproveite o descanso!</p>
