@@ -148,10 +148,7 @@ function Dashboard() {
   const highlightGrouped = useMemo(() => {
     const g: Record<string, TaskRow[]> = {};
     for (const t of highlightedTasks) {
-      const key =
-        t.category === "diaria"
-          ? CATEGORY_LABELS.diaria
-          : `${CATEGORY_LABELS.semanal} · ${WEEKDAY_LABELS[t.weekday ?? 0] ?? ""}`;
+      const key = t.category === "diaria" ? CATEGORY_LABELS.diaria : CATEGORY_LABELS.semanal;
       (g[key] ??= []).push(t);
     }
     return g;
