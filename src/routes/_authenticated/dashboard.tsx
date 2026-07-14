@@ -11,7 +11,8 @@ import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, star
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
-import { Activity, LogOut, Shield, ClipboardList, AlertTriangle } from "lucide-react";
+import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -201,9 +202,46 @@ function Dashboard() {
     inProgress: dueToday.filter((t) => statusById.get(t.id) === "in_progress").length,
     pending: dueToday.filter((t) => (statusById.get(t.id) ?? "pending") === "pending").length,
   };
+  const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+
+  // Preview tasks for another weekday
+  const [previewWd, setPreviewWd] = useState<string>("");
+  const previewTasks = useMemo(() => {
+    if (!previewWd) return [];
+    const n = Number(previewWd);
+    return tasks.filter((t) => t.category === "diaria" || (t.category === "semanal" && t.weekday === n));
+  }, [previewWd, tasks]);
+  const previewGrouped = useMemo(() => {
+    const g: Record<string, TaskRow[]> = {};
+    for (const t of previewTasks) {
+      const key = t.group_label ?? "Geral";
+      (g[key] ??= []).push(t);
+    }
+    return g;
+  }, [previewTasks]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      {/* Background progress ring — sofisticated, semi-transparent */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 flex items-center justify-center z-0 overflow-hidden">
+        <div className="relative opacity-[0.07] blur-[0.5px]">
+          <svg width="640" height="640" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground" />
+            <circle
+              cx="100" cy="100" r="88" fill="none"
+              stroke="currentColor" strokeWidth="10" strokeLinecap="round"
+              className={pct === 100 ? "text-status-green" : pct >= 50 ? "text-status-yellow" : "text-status-red"}
+              strokeDasharray={`${(pct / 100) * 2 * Math.PI * 88} ${2 * Math.PI * 88}`}
+              transform="rotate(-90 100 100)"
+            />
+            <text x="100" y="108" textAnchor="middle" fontSize="42" fontWeight="800" fill="currentColor" className="text-foreground">
+              {pct}%
+            </text>
+          </svg>
+        </div>
+      </div>
+      <div className="relative z-[1]">
+
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-4">
           <div className="flex items-center gap-3">
@@ -242,6 +280,47 @@ function Dashboard() {
           <StatCard label="Em andamento" value={stats.inProgress} tone="yellow" />
           <StatCard label="Concluídas" value={stats.done} tone="green" />
         </section>
+
+        {/* Preview de tarefas de outro dia da semana */}
+        <section className="card-elevated rounded-xl p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Ver tarefas de outro dia</h2>
+            <div className="ml-auto min-w-[200px]">
+              <Select value={previewWd} onValueChange={setPreviewWd}>
+                <SelectTrigger><SelectValue placeholder="Selecionar dia da semana" /></SelectTrigger>
+                <SelectContent>
+                  {[1,2,3,4,5,6].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{WEEKDAY_LABELS[n]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {previewWd && (
+            <div className="mt-4 space-y-3">
+              {Object.keys(previewGrouped).length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma tarefa programada para {WEEKDAY_LABELS[Number(previewWd)]}.</p>
+              ) : (
+                Object.entries(previewGrouped).map(([sub, list]) => (
+                  <div key={sub}>
+                    {sub !== "Geral" && <h3 className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{sub}</h3>}
+                    <ul className="text-sm space-y-1">
+                      {list.map((t) => (
+                        <li key={t.id} className="flex items-start gap-2 text-muted-foreground">
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-status-yellow shrink-0" />
+                          <span>{t.title}</span>
+                          {t.category === "diaria" && <Badge variant="outline" className="ml-1 text-[10px]">diária</Badge>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </section>
+
 
         {wd === 0 && (
           <div className="card-elevated rounded-lg p-6 text-center">
@@ -389,7 +468,9 @@ function Dashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
+
   );
 }
 
