@@ -59,3 +59,21 @@ export function isTaskDueToday(task: { category: string; weekday: number | null 
       return false;
   }
 }
+
+// Returns true if today is the first business day (Mon-Sat) of the current month.
+export function isFirstBusinessDayOfMonth(): boolean {
+  const now = new Date();
+  const day = now.getDate();
+  const jsDow = now.getDay(); // 0=Sun..6=Sat
+  if (jsDow === 0) return false; // Sunday never counts
+  // First business day = smallest date in month whose weekday != Sunday
+  // If today is 1st and not Sunday => yes
+  // If today is 2nd and 1st was Sunday => yes
+  if (day === 1) return true;
+  if (day === 2) {
+    const firstDow = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+    return firstDow === 0;
+  }
+  return false;
+}
+
