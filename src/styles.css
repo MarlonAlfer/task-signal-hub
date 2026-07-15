@@ -45,7 +45,7 @@
 :root {
   --radius: 0.75rem;
 
-  /* WorkPulse dark semáforo palette */
+  /* Domus Liv dark semáforo palette */
   --background: oklch(0.17 0.02 260);
   --foreground: oklch(0.97 0.005 260);
 

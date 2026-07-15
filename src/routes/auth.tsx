@@ -63,7 +63,7 @@ function AuthPage() {
             <span className="h-3 w-3 rounded-full bg-status-green shadow-glow-green" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">WorkPulse</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Domus Liv</h1>
             <p className="text-xs text-muted-foreground">Manutenção em ritmo constante</p>
           </div>
         </div>
