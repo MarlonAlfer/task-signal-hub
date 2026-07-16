@@ -476,6 +476,12 @@ function Dashboard() {
                       </div>
                     );
                   })}
+                  <GroupNote
+                    category={groupKey === CATEGORY_LABELS.diaria ? "diaria" : "semanal"}
+                    date={today}
+                    categoryLabel={groupKey}
+                    canEdit={canEdit}
+                  />
                 </div>
               )}
             </section>
