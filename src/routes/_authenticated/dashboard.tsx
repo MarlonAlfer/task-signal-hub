@@ -11,7 +11,7 @@ import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, star
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
-import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, UserCog, History } from "lucide-react";
+import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, UserCog, History, Volume2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { GroupNote } from "@/components/GroupNote";
@@ -200,6 +200,10 @@ function Dashboard() {
 
   // Monthly floating alert — first business day of the month, until acknowledged
   const [monthAlertOpen, setMonthAlertOpen] = useState(false);
+  const pendingMensalList = useMemo(
+    () => otherTasks.filter((t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done"),
+    [otherTasks, statusById]
+  );
   useEffect(() => {
     if (!tasksQ.data) return;
     if (typeof window === "undefined") return;
@@ -207,11 +211,55 @@ function Dashboard() {
     const now = new Date();
     const key = `wp-month-alert-${now.getFullYear()}-${now.getMonth() + 1}`;
     if (localStorage.getItem(key)) return;
-    const pendingMensal = otherTasks.filter(
-      (t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done"
-    );
-    if (pendingMensal.length > 0) setMonthAlertOpen(true);
-  }, [tasksQ.data, otherTasks, statusById]);
+    if (pendingMensalList.length > 0) setMonthAlertOpen(true);
+  }, [tasksQ.data, pendingMensalList]);
+
+  // Play audible reminder for monthly pending tasks
+  function playMonthlyAlertSound() {
+    if (typeof window === "undefined") return;
+    const count = pendingMensalList.length;
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const notes = [880, 1175, 1568]; // A5, D6, G6 chime
+        notes.forEach((freq, i) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = "sine";
+          o.frequency.value = freq;
+          const t0 = ctx.currentTime + i * 0.22;
+          g.gain.setValueAtTime(0, t0);
+          g.gain.linearRampToValueAtTime(0.25, t0 + 0.03);
+          g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.55);
+          o.connect(g).connect(ctx.destination);
+          o.start(t0);
+          o.stop(t0 + 0.6);
+        });
+      }
+    } catch { /* ignore */ }
+    try {
+      const synth = window.speechSynthesis;
+      if (synth) {
+        synth.cancel();
+        const msg = new SpeechSynthesisUtterance(
+          `Atenção. Hoje é o primeiro dia útil do mês. Você tem ${count} tarefa${count === 1 ? "" : "s"} mensal${count === 1 ? "" : "is"} pendente${count === 1 ? "" : "s"}.`
+        );
+        msg.lang = "pt-BR";
+        msg.rate = 1;
+        msg.pitch = 1;
+        setTimeout(() => synth.speak(msg), 900);
+      }
+    } catch { /* ignore */ }
+  }
+
+  useEffect(() => {
+    if (!monthAlertOpen) return;
+    playMonthlyAlertSound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthAlertOpen]);
+
+
 
   function ackMonthAlert() {
     const now = new Date();
@@ -577,7 +625,12 @@ function Dashboard() {
                     <li key={t.id} className="text-muted-foreground">• {t.title}</li>
                   ))}
               </ul>
-              <Button size="sm" onClick={ackMonthAlert} className="w-full">Estou ciente</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={playMonthlyAlertSound} className="shrink-0" title="Ouvir alerta">
+                  <Volume2 className="h-4 w-4" />
+                </Button>
+                <Button size="sm" onClick={ackMonthAlert} className="flex-1">Estou ciente</Button>
+              </div>
             </div>
           </div>
         </div>
