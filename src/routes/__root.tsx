@@ -14,6 +14,7 @@ import smarthomeBg from "@/assets/smarthome-bg.jpg";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
+import { BackgroundMusic } from "@/components/BackgroundMusic";
 
 function NotFoundComponent() {
   return (
@@ -109,6 +110,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster theme="dark" position="top-right" richColors />
+      <BackgroundMusic />
     </QueryClientProvider>
   );
 }
