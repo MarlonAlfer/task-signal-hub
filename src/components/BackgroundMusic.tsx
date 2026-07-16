@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Music, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import mpbTrack from "@/assets/mpb-background.mp3.asset.json";
 
-// URL da faixa MPB instrumental — substituir por um link direto para um MP3 royalty-free.
-// Ex.: Pixabay Music, Free Music Archive, ccMixter. Deve terminar em .mp3
-export const MPB_TRACK_URL =
-  "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3";
+// Faixa de fundo (jazz/MPB instrumental) servida pelo CDN.
+export const MPB_TRACK_URL = mpbTrack.url;
 
 const STORAGE_PLAYING = "domus-bgm-playing";
 const STORAGE_VOLUME = "domus-bgm-volume";
