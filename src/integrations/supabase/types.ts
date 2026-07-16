@@ -47,6 +47,36 @@ export type Database = {
         }
         Relationships: []
       }
+      group_notes: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          note: string
+          note_date: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          note?: string
+          note_date: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          note?: string
+          note_date?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
