@@ -15,6 +15,7 @@ import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, C
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { GroupNote } from "@/components/GroupNote";
+import { playCompletionSound } from "@/lib/sound-effects";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -167,6 +168,7 @@ function Dashboard() {
   }
 
   function complete(taskId: string) {
+    playCompletionSound();
     setStatus(taskId, "done");
   }
 
