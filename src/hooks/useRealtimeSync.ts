@@ -28,6 +28,9 @@ export function useRealtimeSync() {
         qc.invalidateQueries({ queryKey: ["my-roles"] });
         qc.invalidateQueries({ queryKey: ["user-roles"] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_notes" }, () => {
+        qc.invalidateQueries({ queryKey: ["group-note"] });
+      })
       .subscribe();
 
     return () => {
