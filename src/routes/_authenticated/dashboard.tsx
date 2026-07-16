@@ -11,7 +11,7 @@ import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, star
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
-import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, UserCog, History } from "lucide-react";
+import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, UserCog, History, Volume2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { GroupNote } from "@/components/GroupNote";
@@ -214,9 +214,8 @@ function Dashboard() {
     if (pendingMensalList.length > 0) setMonthAlertOpen(true);
   }, [tasksQ.data, pendingMensalList]);
 
-  // Play audible reminder when the monthly alert opens
-  useEffect(() => {
-    if (!monthAlertOpen) return;
+  // Play audible reminder for monthly pending tasks
+  function playMonthlyAlertSound() {
     if (typeof window === "undefined") return;
     const count = pendingMensalList.length;
     try {
@@ -249,11 +248,17 @@ function Dashboard() {
         msg.lang = "pt-BR";
         msg.rate = 1;
         msg.pitch = 1;
-        // Delay so the chime plays first
         setTimeout(() => synth.speak(msg), 900);
       }
     } catch { /* ignore */ }
-  }, [monthAlertOpen, pendingMensalList.length]);
+  }
+
+  useEffect(() => {
+    if (!monthAlertOpen) return;
+    playMonthlyAlertSound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthAlertOpen]);
+
 
 
   function ackMonthAlert() {
@@ -620,7 +625,12 @@ function Dashboard() {
                     <li key={t.id} className="text-muted-foreground">• {t.title}</li>
                   ))}
               </ul>
-              <Button size="sm" onClick={ackMonthAlert} className="w-full">Estou ciente</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="secondary" onClick={playMonthlyAlertSound} className="shrink-0" title="Ouvir alerta">
+                  <Volume2 className="h-4 w-4" />
+                </Button>
+                <Button size="sm" onClick={ackMonthAlert} className="flex-1">Estou ciente</Button>
+              </div>
             </div>
           </div>
         </div>
