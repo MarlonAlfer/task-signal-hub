@@ -504,6 +504,8 @@ function Dashboard() {
             <div className="grid gap-4 md:grid-cols-3">
               {Object.entries(otherGrouped).map(([groupKey, list]) => {
                 const k = `other:${groupKey}`;
+                const catKey = (Object.entries(CATEGORY_LABELS).find(([, v]) => v === groupKey)?.[0]) ?? "";
+                const showNote = catKey === "quinzenal" || catKey === "mensal";
                 return (
                 <div key={groupKey} className="rounded-lg border border-border p-3">
                   <button
@@ -517,6 +519,7 @@ function Dashboard() {
                     <span className="ml-auto text-[10px] text-muted-foreground">{list.length}</span>
                   </button>
                   {isOpen(k) && (
+                    <>
                     <ul className="space-y-1 text-xs">
                       {list.map((t) => {
                         const s = statusById.get(t.id) ?? "pending";
@@ -537,6 +540,10 @@ function Dashboard() {
                         );
                       })}
                     </ul>
+                    {showNote && (
+                      <GroupNote category={catKey} date={today} categoryLabel={groupKey} canEdit={canEdit} />
+                    )}
+                    </>
                   )}
                 </div>
                 );
