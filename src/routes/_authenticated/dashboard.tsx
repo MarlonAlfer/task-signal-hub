@@ -14,6 +14,7 @@ import type { CompletionStatus, TaskRow } from "@/lib/types";
 import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, UserCog, History } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { GroupNote } from "@/components/GroupNote";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
