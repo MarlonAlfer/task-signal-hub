@@ -16,13 +16,14 @@ export function BackgroundMusic() {
   const [expanded, setExpanded] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Load persisted state
+  // Load persisted state — auto-play por padrão ao entrar na área autenticada
   useEffect(() => {
     if (typeof window === "undefined") return;
     const v = localStorage.getItem(STORAGE_VOLUME);
     if (v) setVolume(Math.max(0, Math.min(1, Number(v))));
     const p = localStorage.getItem(STORAGE_PLAYING);
-    if (p === "1") setPlaying(true);
+    // Default: tocar. Só fica em pausa se o utilizador tiver pausado explicitamente.
+    setPlaying(p === null ? true : p === "1");
     setReady(true);
   }, []);
 

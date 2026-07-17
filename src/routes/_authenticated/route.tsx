@@ -1,10 +1,16 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { BackgroundMusic } from "@/components/BackgroundMusic";
 
 function AuthenticatedLayout() {
   useRealtimeSync();
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <BackgroundMusic />
+    </>
+  );
 }
 
 export const Route = createFileRoute("/_authenticated")({
