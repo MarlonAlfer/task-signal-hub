@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Activity } from "lucide-react";
-import { ensureBackgroundMusic } from "@/lib/bgm";
+import { ensureBackgroundMusic, preloadBackgroundMusic } from "@/lib/bgm";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -23,6 +23,8 @@ function AuthPage() {
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
+    // Pré-carrega o áudio para que o play() no submit inicie sem espera de rede
+    preloadBackgroundMusic();
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate({ to: "/dashboard", replace: true });
     });
