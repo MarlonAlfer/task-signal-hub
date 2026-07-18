@@ -16,7 +16,7 @@ export function preloadBackgroundMusic(volume = 0.35): HTMLAudioElement | null {
     el.loop = true;
     el.preload = "auto";
     el.volume = volume;
-    el.crossOrigin = "anonymous";
+    // (sem crossOrigin — evita bloqueio caso o CDN não envie CORS em media)
     // força o buffer
     try { el.load(); } catch { /* noop */ }
     window.__domusBgm = el;
