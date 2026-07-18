@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Activity } from "lucide-react";
+import { ensureBackgroundMusic } from "@/lib/bgm";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -29,6 +30,8 @@ function AuthPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
+    // Desbloqueia o autoplay usando o gesto atual do utilizador (submit)
+    ensureBackgroundMusic();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);

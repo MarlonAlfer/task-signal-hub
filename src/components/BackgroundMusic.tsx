@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Music, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
-import mpbTrack from "@/assets/mpb-background.mp3.asset.json";
+import { MPB_TRACK_URL, ensureBackgroundMusic } from "@/lib/bgm";
 
-// Faixa de fundo (jazz/MPB instrumental) servida pelo CDN.
-export const MPB_TRACK_URL = mpbTrack.url;
+export { MPB_TRACK_URL };
 
 const STORAGE_PLAYING = "domus-bgm-playing";
 const STORAGE_VOLUME = "domus-bgm-volume";
@@ -16,14 +15,23 @@ export function BackgroundMusic() {
   const [expanded, setExpanded] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Load persisted state — auto-play por padrão ao entrar na área autenticada
+  // Adopta (ou cria) o elemento global e restaura preferências
   useEffect(() => {
     if (typeof window === "undefined") return;
     const v = localStorage.getItem(STORAGE_VOLUME);
-    if (v) setVolume(Math.max(0, Math.min(1, Number(v))));
+    const vol = v ? Math.max(0, Math.min(1, Number(v))) : 0.35;
+    setVolume(vol);
     const p = localStorage.getItem(STORAGE_PLAYING);
-    // Default: tocar. Só fica em pausa se o utilizador tiver pausado explicitamente.
-    setPlaying(p === null ? true : p === "1");
+    const shouldPlay = p === null ? true : p === "1";
+    setPlaying(shouldPlay);
+    // Reusa o <audio> desbloqueado no login, ou cria um novo
+    const el = ensureBackgroundMusic(vol);
+    if (el) {
+      audioRef.current = el;
+      el.volume = vol;
+      if (shouldPlay) void el.play().catch(() => {});
+      else el.pause();
+    }
     setReady(true);
   }, []);
 
@@ -34,43 +42,32 @@ export function BackgroundMusic() {
     localStorage.setItem(STORAGE_PLAYING, playing ? "1" : "0");
   }, [playing, volume, ready]);
 
-  // Apply volume
+  // Aplica volume
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
-  // Play/pause — tenta autoplay e, se o browser bloquear, retoma no primeiro gesto
+  // Play/pause com fallback para primeiro gesto
   useEffect(() => {
+    if (!ready) return;
     const el = audioRef.current;
     if (!el) return;
     if (!playing) {
       el.pause();
       return;
     }
-    el.play().catch(() => {});
-    const resume = () => {
-      el.play().catch(() => {});
-    };
-    window.addEventListener("pointerdown", resume);
-    window.addEventListener("keydown", resume);
-    window.addEventListener("touchstart", resume);
-    const onPlaying = () => {
-      window.removeEventListener("pointerdown", resume);
-      window.removeEventListener("keydown", resume);
-      window.removeEventListener("touchstart", resume);
-    };
-    el.addEventListener("playing", onPlaying, { once: true });
-    return () => {
-      window.removeEventListener("pointerdown", resume);
-      window.removeEventListener("keydown", resume);
-      window.removeEventListener("touchstart", resume);
-      el.removeEventListener("playing", onPlaying);
-    };
-  }, [playing]);
+    el.play().catch(() => {
+      const resume = () => {
+        el.play().catch(() => {});
+      };
+      window.addEventListener("pointerdown", resume, { once: true });
+      window.addEventListener("keydown", resume, { once: true });
+      window.addEventListener("touchstart", resume, { once: true });
+    });
+  }, [playing, ready]);
 
   return (
     <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-border/50 bg-background/70 px-3 py-2 shadow-lg backdrop-blur-md">
-      <audio ref={audioRef} src={MPB_TRACK_URL} loop preload="auto" autoPlay />
       <button
         type="button"
         aria-label={playing ? "Pausar música" : "Tocar música MPB"}
