@@ -23,6 +23,8 @@ function AuthPage() {
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
+    // Pré-carrega o áudio para que o play() no submit inicie sem espera de rede
+    preloadBackgroundMusic();
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate({ to: "/dashboard", replace: true });
     });
