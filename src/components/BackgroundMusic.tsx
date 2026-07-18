@@ -39,23 +39,38 @@ export function BackgroundMusic() {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
 
-  // Play/pause
+  // Play/pause — tenta autoplay e, se o browser bloquear, retoma no primeiro gesto
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
-    if (playing) {
-      el.play().catch(() => {
-        // Autoplay bloqueado — requer gesto do utilizador
-        setPlaying(false);
-      });
-    } else {
+    if (!playing) {
       el.pause();
+      return;
     }
+    el.play().catch(() => {});
+    const resume = () => {
+      el.play().catch(() => {});
+    };
+    window.addEventListener("pointerdown", resume);
+    window.addEventListener("keydown", resume);
+    window.addEventListener("touchstart", resume);
+    const onPlaying = () => {
+      window.removeEventListener("pointerdown", resume);
+      window.removeEventListener("keydown", resume);
+      window.removeEventListener("touchstart", resume);
+    };
+    el.addEventListener("playing", onPlaying, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", resume);
+      window.removeEventListener("keydown", resume);
+      window.removeEventListener("touchstart", resume);
+      el.removeEventListener("playing", onPlaying);
+    };
   }, [playing]);
 
   return (
     <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-border/50 bg-background/70 px-3 py-2 shadow-lg backdrop-blur-md">
-      <audio ref={audioRef} src={MPB_TRACK_URL} loop preload="none" />
+      <audio ref={audioRef} src={MPB_TRACK_URL} loop preload="auto" autoPlay />
       <button
         type="button"
         aria-label={playing ? "Pausar música" : "Tocar música MPB"}
