@@ -29,6 +29,9 @@ function AuthPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
+    // Desbloqueia o autoplay usando o gesto atual do utilizador
+    const { ensureBackgroundMusic } = await import("@/lib/bgm");
+    ensureBackgroundMusic();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
