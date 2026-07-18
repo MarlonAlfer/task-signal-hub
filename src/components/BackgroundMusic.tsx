@@ -70,7 +70,7 @@ export function BackgroundMusic() {
 
   return (
     <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-border/50 bg-background/70 px-3 py-2 shadow-lg backdrop-blur-md">
-      <audio ref={audioRef} src={MPB_TRACK_URL} loop preload="none" />
+      <audio ref={audioRef} src={MPB_TRACK_URL} loop preload="auto" autoPlay />
       <button
         type="button"
         aria-label={playing ? "Pausar música" : "Tocar música MPB"}
