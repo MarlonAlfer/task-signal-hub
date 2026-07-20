@@ -115,6 +115,17 @@ function Dashboard() {
     }
   }, [tasksQ.data, today, dueToday.length]);
 
+  // Congratulatory message when the last pending task of today is completed
+  const [congratsOpen, setCongratsOpen] = useState(false);
+  const prevPendingCountRef = useRef<number | null>(null);
+  useEffect(() => {
+    const prev = prevPendingCountRef.current;
+    prevPendingCountRef.current = pendingToday.length;
+    if (prev === 1 && pendingToday.length === 0 && !congratsOpen) {
+      setCongratsOpen(true);
+    }
+  }, [pendingToday.length, congratsOpen]);
+
   // Weekly (Friday) alert once per week
   const [openWeekly, setOpenWeekly] = useState(false);
   useEffect(() => {
