@@ -259,6 +259,7 @@ function UsersAdmin() {
                   <SelectItem value="admin">Administrador</SelectItem>
                   <SelectItem value="user">Usuário</SelectItem>
                   <SelectItem value="visitor">Visitante</SelectItem>
+                  <SelectItem value="pending">Ainda não autorizado</SelectItem>
                 </SelectContent>
               </Select>
               <Button
