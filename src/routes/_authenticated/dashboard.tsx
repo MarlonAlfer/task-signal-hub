@@ -49,6 +49,19 @@ function Dashboard() {
     },
   });
 
+  const extrasQ = useQuery({
+    queryKey: ["extra-tasks", today],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("extra_tasks")
+        .select("*")
+        .eq("task_date", today)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const profileQ = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
