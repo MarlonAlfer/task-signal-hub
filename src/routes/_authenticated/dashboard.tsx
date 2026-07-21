@@ -11,7 +11,7 @@ import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, star
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
-import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, UserCog, History, Volume2 } from "lucide-react";
+import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, UserCog, History, Volume2, Plus, Trash2, Sparkles } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { GroupNote } from "@/components/GroupNote";
@@ -44,6 +44,19 @@ function Dashboard() {
     queryKey: ["completions", today],
     queryFn: async () => {
       const { data, error } = await supabase.from("task_completions").select("*").eq("completion_date", today);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const extrasQ = useQuery({
+    queryKey: ["extra-tasks", today],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("extra_tasks")
+        .select("*")
+        .eq("task_date", today)
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
@@ -181,6 +194,62 @@ function Dashboard() {
   function complete(taskId: string) {
     playCompletionSound();
     setStatus(taskId, "done");
+  }
+
+  // Extra ad-hoc tasks
+  const [extraTitle, setExtraTitle] = useState("");
+  const [addingExtra, setAddingExtra] = useState(false);
+  const extras = extrasQ.data ?? [];
+  const pendingExtras = useMemo(() => extras.filter((e) => e.status !== "done"), [extras]);
+
+  async function addExtra() {
+    const title = extraTitle.trim();
+    if (!title) return;
+    if (!canEdit) return toast.error("Visitantes não podem adicionar tarefas.");
+    setAddingExtra(true);
+    const { data: u } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from("extra_tasks")
+      .insert({ title, task_date: today, status: "pending", created_by: u.user?.id })
+      .select()
+      .single();
+    setAddingExtra(false);
+    if (error) return toast.error(error.message);
+    setExtraTitle("");
+    await logAudit("extra_task_create", "extra_tasks", data?.id ?? null, { title, date: today });
+    qc.invalidateQueries({ queryKey: ["extra-tasks", today] });
+  }
+
+  async function setExtraStatus(id: string, newStatus: CompletionStatus) {
+    if (!canEdit) return toast.error("Visitantes não podem editar tarefas.");
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("extra_tasks")
+      .update({ status: newStatus, updated_by: u.user?.id })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    await logAudit("extra_task_status_change", "extra_tasks", id, { to: newStatus });
+    qc.invalidateQueries({ queryKey: ["extra-tasks", today] });
+  }
+
+  function cycleExtra(id: string, current: CompletionStatus) {
+    if (current === "pending") setExtraStatus(id, "in_progress");
+    else if (current === "in_progress") setExtraStatus(id, "pending");
+    else setExtraStatus(id, "pending");
+  }
+
+  function completeExtra(id: string) {
+    playCompletionSound();
+    setExtraStatus(id, "done");
+  }
+
+  async function removeExtra(id: string) {
+    if (!canEdit) return toast.error("Visitantes não podem excluir tarefas.");
+    if (!confirm("Excluir esta tarefa extra?")) return;
+    const { error } = await supabase.from("extra_tasks").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    await logAudit("extra_task_delete", "extra_tasks", id);
+    qc.invalidateQueries({ queryKey: ["extra-tasks", today] });
   }
 
   // Split tasks: highlighted (daily + today's weekly) vs other (quinzenal/mensal/semestral)
@@ -460,6 +529,88 @@ function Dashboard() {
             </div>
           )}
         </section>
+
+        {/* Tarefas extras do dia */}
+        <section className="card-elevated rounded-xl p-5 border-l-4 border-status-red">
+          <button
+            type="button"
+            onClick={() => toggle("extras")}
+            className="w-full flex items-center gap-2 mb-3 text-left hover:opacity-80"
+            aria-expanded={isOpen("extras")}
+          >
+            {isOpen("extras") ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+            <Sparkles className="h-4 w-4 text-status-yellow" />
+            <h2 className="text-lg font-semibold">Tarefas extras de hoje</h2>
+            <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+              {pendingExtras.length > 0 && (
+                <span className="inline-flex items-center rounded-full bg-status-red/15 text-status-red px-2 py-0.5 font-semibold ring-1 ring-status-red/30">
+                  {pendingExtras.length} pendente{pendingExtras.length === 1 ? "" : "s"}
+                </span>
+              )}
+              <span>{extras.length}</span>
+            </span>
+          </button>
+          {isOpen("extras") && (
+            <div className="space-y-3">
+              {canEdit && (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); addExtra(); }}
+                  className="flex gap-2"
+                >
+                  <Input
+                    value={extraTitle}
+                    onChange={(e) => setExtraTitle(e.target.value)}
+                    placeholder="Adicionar tarefa extra… (fica pendente até dois cliques)"
+                    maxLength={200}
+                    disabled={addingExtra}
+                  />
+                  <Button type="submit" disabled={addingExtra || !extraTitle.trim()}>
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar
+                  </Button>
+                </form>
+              )}
+              {extras.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma tarefa extra hoje.</p>
+              ) : (
+                <div className="space-y-2">
+                  {extras.map((e) => {
+                    const s = (e.status as CompletionStatus) ?? "pending";
+                    return (
+                      <div key={e.id} className="flex items-stretch gap-2">
+                        <div className="flex-1">
+                          <TrafficTaskItem
+                            title={e.title}
+                            group="Extra"
+                            status={s}
+                            disabled={!canEdit}
+                            onCycle={() => cycleExtra(e.id, s)}
+                            onComplete={() => completeExtra(e.id)}
+                          />
+                        </div>
+                        {canEdit && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Excluir"
+                            onClick={() => removeExtra(e.id)}
+                            className="shrink-0 self-center text-muted-foreground hover:text-status-red"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Tarefa recém-criada entra como <span className="text-status-red font-semibold">pendente</span>. Dê <strong>dois cliques</strong> para marcar como concluída.
+              </p>
+            </div>
+          )}
+        </section>
+
+
 
 
         {wd === 0 && (
