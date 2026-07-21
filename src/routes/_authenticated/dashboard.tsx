@@ -280,15 +280,20 @@ function Dashboard() {
     qc.invalidateQueries({ queryKey: ["extra-tasks", today] });
   }
 
-  // Split tasks: highlighted (daily + today's weekly) vs other (quinzenal/mensal/semestral)
+  // View a specific weekday's schedule (defaults to today; Sunday → Monday)
+  const [viewWd, setViewWd] = useState<number>(wd === 0 ? 1 : wd);
+  const isViewingToday = viewWd === wd;
+
+  // Split tasks: highlighted (daily + selected weekday) vs other (quinzenal/mensal/semestral)
   const highlightedTasks = useMemo(
-    () => dueToday.filter((t) => t.category === "diaria" || t.category === "semanal"),
-    [dueToday]
+    () => tasks.filter((t) => t.active !== false && (t.category === "diaria" || (t.category === "semanal" && t.weekday === viewWd))),
+    [tasks, viewWd]
   );
   const otherTasks = useMemo(
     () => tasks.filter((t) => t.category === "quinzenal" || t.category === "mensal" || t.category === "semestral"),
     [tasks]
   );
+
 
   const highlightGrouped = useMemo(() => {
     const g: Record<string, TaskRow[]> = {};
@@ -394,25 +399,10 @@ function Dashboard() {
   };
   const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
-  // Preview tasks for another weekday
-  const [previewWd, setPreviewWd] = useState<string>("");
-  const [previewOpen, setPreviewOpen] = useState<boolean>(true);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const isOpen = (k: string) => !collapsed[k];
   const toggle = (k: string) => setCollapsed((c) => ({ ...c, [k]: !c[k] }));
-  const previewTasks = useMemo(() => {
-    if (!previewWd) return [];
-    const n = Number(previewWd);
-    return tasks.filter((t) => t.category === "diaria" || (t.category === "semanal" && t.weekday === n));
-  }, [previewWd, tasks]);
-  const previewGrouped = useMemo(() => {
-    const g: Record<string, TaskRow[]> = {};
-    for (const t of previewTasks) {
-      const key = t.group_label ?? "Geral";
-      (g[key] ??= []).push(t);
-    }
-    return g;
-  }, [previewTasks]);
+
 
   return (
     <div className="min-h-screen relative">
@@ -495,6 +485,39 @@ function Dashboard() {
             </div>
           )}
         </section>
+
+        {/* Seletor de dia da semana — visualizar / editar tarefas de outro dia */}
+        <section className="card-elevated rounded-xl p-4 flex flex-wrap items-center gap-3">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <div className="flex-1 min-w-[200px]">
+            <h2 className="text-sm font-semibold">Ver / editar tarefas do dia</h2>
+            <p className="text-[11px] text-muted-foreground">
+              Selecione um dia para visualizar ou marcar tarefas. As alterações são registradas em <strong>hoje</strong>.
+            </p>
+          </div>
+          <div className="min-w-[180px]">
+            <Select value={String(viewWd)} onValueChange={(v) => setViewWd(Number(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[1,2,3,4,5,6].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    <span className="flex items-center gap-2">
+                      {WEEKDAY_LABELS[n]}
+                      {n === wd && <span className="rounded-full bg-status-green/20 text-status-green px-1.5 py-0.5 text-[9px] font-bold uppercase">Hoje</span>}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {!isViewingToday && (
+            <Button variant="ghost" size="sm" onClick={() => setViewWd(wd === 0 ? 1 : wd)}>
+              Voltar para hoje
+            </Button>
+          )}
+        </section>
+
+
 
 
         {/* Tarefas extras do dia */}
@@ -580,13 +603,14 @@ function Dashboard() {
 
 
 
-        {wd === 0 && (
+        {viewWd === 0 && (
           <div className="card-elevated rounded-lg p-6 text-center">
-            <p className="text-muted-foreground">Hoje é domingo — nenhuma tarefa está programada. Aproveite o descanso!</p>
+            <p className="text-muted-foreground">Domingo — nenhuma tarefa programada.</p>
           </div>
         )}
 
-        {Object.keys(highlightGrouped).length === 0 && wd !== 0 && !tasksQ.isLoading && (
+        {Object.keys(highlightGrouped).length === 0 && viewWd !== 0 && !tasksQ.isLoading && (
+
           <div className="card-elevated rounded-lg p-6 text-center text-muted-foreground">
             Nenhuma tarefa para hoje.
           </div>
@@ -613,10 +637,11 @@ function Dashboard() {
                   <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
                   {groupKey === CATEGORY_LABELS.semanal && (
                     <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1 flex items-center gap-2">
-                      <span>{WEEKDAY_LABELS[wd]}</span>
-                      <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold ring-1 ring-status-green/30">Hoje</span>
+                      <span>{WEEKDAY_LABELS[viewWd]}</span>
+                      {isViewingToday && <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold ring-1 ring-status-green/30">Hoje</span>}
                     </p>
                   )}
+
                 </div>
                 <span className="ml-auto text-xs text-muted-foreground">{list.length}</span>
               </button>
