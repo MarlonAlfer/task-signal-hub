@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoles, highestRole, type AppRole } from "@/hooks/useRoles";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2, Pencil } from "lucide-react";
 import { WEEKDAY_LABELS, CATEGORY_LABELS } from "@/lib/task-utils";
 import { logAudit } from "@/lib/audit";
+import { deleteUserAccount } from "@/lib/admin-users.functions";
 import type { TaskRow } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/admin")({
