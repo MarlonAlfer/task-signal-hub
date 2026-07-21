@@ -196,6 +196,62 @@ function Dashboard() {
     setStatus(taskId, "done");
   }
 
+  // Extra ad-hoc tasks
+  const [extraTitle, setExtraTitle] = useState("");
+  const [addingExtra, setAddingExtra] = useState(false);
+  const extras = extrasQ.data ?? [];
+  const pendingExtras = useMemo(() => extras.filter((e) => e.status !== "done"), [extras]);
+
+  async function addExtra() {
+    const title = extraTitle.trim();
+    if (!title) return;
+    if (!canEdit) return toast.error("Visitantes não podem adicionar tarefas.");
+    setAddingExtra(true);
+    const { data: u } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from("extra_tasks")
+      .insert({ title, task_date: today, status: "pending", created_by: u.user?.id })
+      .select()
+      .single();
+    setAddingExtra(false);
+    if (error) return toast.error(error.message);
+    setExtraTitle("");
+    await logAudit("extra_task_create", "extra_tasks", data?.id ?? null, { title, date: today });
+    qc.invalidateQueries({ queryKey: ["extra-tasks", today] });
+  }
+
+  async function setExtraStatus(id: string, newStatus: CompletionStatus) {
+    if (!canEdit) return toast.error("Visitantes não podem editar tarefas.");
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("extra_tasks")
+      .update({ status: newStatus, updated_by: u.user?.id })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    await logAudit("extra_task_status_change", "extra_tasks", id, { to: newStatus });
+    qc.invalidateQueries({ queryKey: ["extra-tasks", today] });
+  }
+
+  function cycleExtra(id: string, current: CompletionStatus) {
+    if (current === "pending") setExtraStatus(id, "in_progress");
+    else if (current === "in_progress") setExtraStatus(id, "pending");
+    else setExtraStatus(id, "pending");
+  }
+
+  function completeExtra(id: string) {
+    playCompletionSound();
+    setExtraStatus(id, "done");
+  }
+
+  async function removeExtra(id: string) {
+    if (!canEdit) return toast.error("Visitantes não podem excluir tarefas.");
+    if (!confirm("Excluir esta tarefa extra?")) return;
+    const { error } = await supabase.from("extra_tasks").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    await logAudit("extra_task_delete", "extra_tasks", id);
+    qc.invalidateQueries({ queryKey: ["extra-tasks", today] });
+  }
+
   // Split tasks: highlighted (daily + today's weekly) vs other (quinzenal/mensal/semestral)
   const highlightedTasks = useMemo(
     () => dueToday.filter((t) => t.category === "diaria" || t.category === "semanal"),
