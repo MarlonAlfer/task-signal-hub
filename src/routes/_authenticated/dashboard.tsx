@@ -399,9 +399,23 @@ function Dashboard() {
   };
   const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const isOpen = (k: string) => !collapsed[k];
-  const toggle = (k: string) => setCollapsed((c) => ({ ...c, [k]: !c[k] }));
+  // Default: all sections start closed. `opened[k] === true` means the user opened it.
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
+  const isOpen = (k: string) => !!opened[k];
+  const toggle = (k: string) => setOpened((o) => ({ ...o, [k]: !o[k] }));
+
+  // Section status: red dot when there are pending items, green when all done.
+  function SectionStatus({ pending, total }: { pending: number; total: number }) {
+    if (total === 0) return null;
+    const allDone = pending === 0;
+    return (
+      <span
+        aria-label={allDone ? "Tudo concluído" : `${pending} pendente(s)`}
+        title={allDone ? "Tudo concluído" : `${pending} pendente(s)`}
+        className={`inline-block h-2.5 w-2.5 rounded-full ${allDone ? "bg-status-green shadow-glow-green" : "bg-status-red shadow-glow-red animate-pulse"}`}
+      />
+    );
+  }
 
 
   return (
