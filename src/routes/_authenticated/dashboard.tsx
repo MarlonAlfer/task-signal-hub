@@ -713,32 +713,40 @@ function Dashboard() {
             <button
               type="button"
               onClick={() => toggle("other")}
-              className="flex items-center gap-2 mb-3 hover:opacity-80"
+              className="w-full flex items-center gap-2 mb-3 hover:opacity-80"
               aria-expanded={isOpen("other")}
             >
               {isOpen("other") ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
+              <span className="ml-auto flex items-center gap-2">
+                <SectionStatus
+                  pending={otherTasks.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length}
+                  total={otherTasks.length}
+                />
+              </span>
             </button>
             {isOpen("other") && (
             <div className="grid gap-4 md:grid-cols-3">
               {Object.entries(otherGrouped).map(([groupKey, list]) => {
                 const k = `other:${groupKey}`;
                 const catKey = (Object.entries(CATEGORY_LABELS).find(([, v]) => v === groupKey)?.[0]) ?? "";
-                const showNote = catKey === "quinzenal" || catKey === "mensal";
+                const pendCount = list.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
                 return (
                 <div key={groupKey} className="rounded-lg border border-border p-3">
                   <button
                     type="button"
                     onClick={() => toggle(k)}
-                    className="w-full flex items-center gap-1 mb-2 hover:opacity-80"
+                    className="w-full flex items-center gap-2 mb-2 hover:opacity-80"
                     aria-expanded={isOpen(k)}
                   >
                     {isOpen(k) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                     <h3 className="text-xs font-semibold">{groupKey}</h3>
-                    <span className="ml-auto text-[10px] text-muted-foreground">{list.length}</span>
+                    <span className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <SectionStatus pending={pendCount} total={list.length} />
+                      <span>{list.length}</span>
+                    </span>
                   </button>
                   {isOpen(k) && (
-                    <>
                     <ul className="space-y-1 text-xs">
                       {list.map((t) => {
                         const s = statusById.get(t.id) ?? "pending";
@@ -767,10 +775,6 @@ function Dashboard() {
                         );
                       })}
                     </ul>
-                    {showNote && (
-                      <GroupNote category={catKey} date={today} categoryLabel={groupKey} canEdit={canEdit} />
-                    )}
-                    </>
                   )}
                 </div>
                 );
@@ -779,6 +783,15 @@ function Dashboard() {
             )}
           </section>
         )}
+
+        {/* Campo único de observação diária — justifique tarefas não feitas */}
+        <GroupNote
+          category="diaria"
+          date={today}
+          categoryLabel={CATEGORY_LABELS.diaria}
+          canEdit={canEdit}
+        />
+
 
 
         <p className="text-xs text-muted-foreground text-center pt-4">
