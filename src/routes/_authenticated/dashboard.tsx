@@ -639,6 +639,7 @@ function Dashboard() {
             return acc;
           }, {});
           const sectionKey = `hl:${groupKey}`;
+          const pendCount = list.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
           return (
             <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
               <button
@@ -658,23 +659,28 @@ function Dashboard() {
                   )}
 
                 </div>
-                <span className="ml-auto text-xs text-muted-foreground">{list.length}</span>
+                <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+                  <SectionStatus pending={pendCount} total={list.length} />
+                  <span>{list.length}</span>
+                </span>
               </button>
               {isOpen(sectionKey) && (
                 <div className="space-y-4">
                   {Object.entries(bySub).map(([sub, tasksSub]) => {
                     const subKey = `${sectionKey}:${sub}`;
+                    const subPend = tasksSub.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
                     return (
                       <div key={sub}>
                         {sub !== "Geral" && (
                           <button
                             type="button"
                             onClick={() => toggle(subKey)}
-                            className="flex items-center gap-1 mb-2 hover:opacity-80"
+                            className="flex items-center gap-2 mb-2 hover:opacity-80"
                             aria-expanded={isOpen(subKey)}
                           >
                             {isOpen(subKey) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                             <h3 className="text-xs uppercase tracking-wider text-muted-foreground">{sub}</h3>
+                            <SectionStatus pending={subPend} total={tasksSub.length} />
                           </button>
                         )}
                         {isOpen(subKey) && (
@@ -695,12 +701,6 @@ function Dashboard() {
                       </div>
                     );
                   })}
-                  <GroupNote
-                    category={groupKey === CATEGORY_LABELS.diaria ? "diaria" : "semanal"}
-                    date={today}
-                    categoryLabel={groupKey}
-                    canEdit={canEdit}
-                  />
                 </div>
               )}
             </section>
