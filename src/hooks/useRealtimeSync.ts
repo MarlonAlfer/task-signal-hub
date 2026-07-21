@@ -31,6 +31,9 @@ export function useRealtimeSync() {
       .on("postgres_changes", { event: "*", schema: "public", table: "group_notes" }, () => {
         qc.invalidateQueries({ queryKey: ["group-note"] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "extra_tasks" }, () => {
+        qc.invalidateQueries({ queryKey: ["extra-tasks"] });
+      })
       .subscribe();
 
     return () => {
