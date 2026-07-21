@@ -280,15 +280,20 @@ function Dashboard() {
     qc.invalidateQueries({ queryKey: ["extra-tasks", today] });
   }
 
-  // Split tasks: highlighted (daily + today's weekly) vs other (quinzenal/mensal/semestral)
+  // View a specific weekday's schedule (defaults to today; Sunday → Monday)
+  const [viewWd, setViewWd] = useState<number>(wd === 0 ? 1 : wd);
+  const isViewingToday = viewWd === wd;
+
+  // Split tasks: highlighted (daily + selected weekday) vs other (quinzenal/mensal/semestral)
   const highlightedTasks = useMemo(
-    () => dueToday.filter((t) => t.category === "diaria" || t.category === "semanal"),
-    [dueToday]
+    () => tasks.filter((t) => t.active !== false && (t.category === "diaria" || (t.category === "semanal" && t.weekday === viewWd))),
+    [tasks, viewWd]
   );
   const otherTasks = useMemo(
     () => tasks.filter((t) => t.category === "quinzenal" || t.category === "mensal" || t.category === "semestral"),
     [tasks]
   );
+
 
   const highlightGrouped = useMemo(() => {
     const g: Record<string, TaskRow[]> = {};
