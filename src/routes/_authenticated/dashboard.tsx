@@ -399,9 +399,23 @@ function Dashboard() {
   };
   const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const isOpen = (k: string) => !collapsed[k];
-  const toggle = (k: string) => setCollapsed((c) => ({ ...c, [k]: !c[k] }));
+  // Default: all sections start closed. `opened[k] === true` means the user opened it.
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
+  const isOpen = (k: string) => !!opened[k];
+  const toggle = (k: string) => setOpened((o) => ({ ...o, [k]: !o[k] }));
+
+  // Section status: red dot when there are pending items, green when all done.
+  function SectionStatus({ pending, total }: { pending: number; total: number }) {
+    if (total === 0) return null;
+    const allDone = pending === 0;
+    return (
+      <span
+        aria-label={allDone ? "Tudo concluído" : `${pending} pendente(s)`}
+        title={allDone ? "Tudo concluído" : `${pending} pendente(s)`}
+        className={`inline-block h-2.5 w-2.5 rounded-full ${allDone ? "bg-status-green shadow-glow-green" : "bg-status-red shadow-glow-red animate-pulse"}`}
+      />
+    );
+  }
 
 
   return (
@@ -532,6 +546,7 @@ function Dashboard() {
             <Sparkles className="h-4 w-4 text-status-yellow" />
             <h2 className="text-lg font-semibold">Tarefas extras de hoje</h2>
             <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+              <SectionStatus pending={pendingExtras.length} total={extras.length} />
               {pendingExtras.length > 0 && (
                 <span className="inline-flex items-center rounded-full bg-status-red/15 text-status-red px-2 py-0.5 font-semibold ring-1 ring-status-red/30">
                   {pendingExtras.length} pendente{pendingExtras.length === 1 ? "" : "s"}
@@ -624,6 +639,7 @@ function Dashboard() {
             return acc;
           }, {});
           const sectionKey = `hl:${groupKey}`;
+          const pendCount = list.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
           return (
             <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
               <button
@@ -643,23 +659,28 @@ function Dashboard() {
                   )}
 
                 </div>
-                <span className="ml-auto text-xs text-muted-foreground">{list.length}</span>
+                <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+                  <SectionStatus pending={pendCount} total={list.length} />
+                  <span>{list.length}</span>
+                </span>
               </button>
               {isOpen(sectionKey) && (
                 <div className="space-y-4">
                   {Object.entries(bySub).map(([sub, tasksSub]) => {
                     const subKey = `${sectionKey}:${sub}`;
+                    const subPend = tasksSub.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
                     return (
                       <div key={sub}>
                         {sub !== "Geral" && (
                           <button
                             type="button"
                             onClick={() => toggle(subKey)}
-                            className="flex items-center gap-1 mb-2 hover:opacity-80"
+                            className="flex items-center gap-2 mb-2 hover:opacity-80"
                             aria-expanded={isOpen(subKey)}
                           >
                             {isOpen(subKey) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                             <h3 className="text-xs uppercase tracking-wider text-muted-foreground">{sub}</h3>
+                            <SectionStatus pending={subPend} total={tasksSub.length} />
                           </button>
                         )}
                         {isOpen(subKey) && (
@@ -680,12 +701,6 @@ function Dashboard() {
                       </div>
                     );
                   })}
-                  <GroupNote
-                    category={groupKey === CATEGORY_LABELS.diaria ? "diaria" : "semanal"}
-                    date={today}
-                    categoryLabel={groupKey}
-                    canEdit={canEdit}
-                  />
                 </div>
               )}
             </section>
@@ -698,32 +713,40 @@ function Dashboard() {
             <button
               type="button"
               onClick={() => toggle("other")}
-              className="flex items-center gap-2 mb-3 hover:opacity-80"
+              className="w-full flex items-center gap-2 mb-3 hover:opacity-80"
               aria-expanded={isOpen("other")}
             >
               {isOpen("other") ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
+              <span className="ml-auto flex items-center gap-2">
+                <SectionStatus
+                  pending={otherTasks.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length}
+                  total={otherTasks.length}
+                />
+              </span>
             </button>
             {isOpen("other") && (
             <div className="grid gap-4 md:grid-cols-3">
               {Object.entries(otherGrouped).map(([groupKey, list]) => {
                 const k = `other:${groupKey}`;
                 const catKey = (Object.entries(CATEGORY_LABELS).find(([, v]) => v === groupKey)?.[0]) ?? "";
-                const showNote = catKey === "quinzenal" || catKey === "mensal";
+                const pendCount = list.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
                 return (
                 <div key={groupKey} className="rounded-lg border border-border p-3">
                   <button
                     type="button"
                     onClick={() => toggle(k)}
-                    className="w-full flex items-center gap-1 mb-2 hover:opacity-80"
+                    className="w-full flex items-center gap-2 mb-2 hover:opacity-80"
                     aria-expanded={isOpen(k)}
                   >
                     {isOpen(k) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                     <h3 className="text-xs font-semibold">{groupKey}</h3>
-                    <span className="ml-auto text-[10px] text-muted-foreground">{list.length}</span>
+                    <span className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <SectionStatus pending={pendCount} total={list.length} />
+                      <span>{list.length}</span>
+                    </span>
                   </button>
                   {isOpen(k) && (
-                    <>
                     <ul className="space-y-1 text-xs">
                       {list.map((t) => {
                         const s = statusById.get(t.id) ?? "pending";
@@ -752,10 +775,6 @@ function Dashboard() {
                         );
                       })}
                     </ul>
-                    {showNote && (
-                      <GroupNote category={catKey} date={today} categoryLabel={groupKey} canEdit={canEdit} />
-                    )}
-                    </>
                   )}
                 </div>
                 );
@@ -764,6 +783,15 @@ function Dashboard() {
             )}
           </section>
         )}
+
+        {/* Campo único de observação diária — justifique tarefas não feitas */}
+        <GroupNote
+          category="diaria"
+          date={today}
+          categoryLabel={CATEGORY_LABELS.diaria}
+          canEdit={canEdit}
+        />
+
 
 
         <p className="text-xs text-muted-foreground text-center pt-4">
