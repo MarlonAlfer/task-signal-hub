@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoles, highestRole, type AppRole } from "@/hooks/useRoles";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2, Pencil } from "lucide-react";
 import { WEEKDAY_LABELS, CATEGORY_LABELS } from "@/lib/task-utils";
 import { logAudit } from "@/lib/audit";
+import { deleteUserAccount } from "@/lib/admin-users.functions";
 import type { TaskRow } from "@/lib/types";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -189,6 +191,15 @@ function TasksAdmin() {
 
 function UsersAdmin() {
   const qc = useQueryClient();
+  const deleteUserFn = useServerFn(deleteUserAccount);
+  const [deleting, setDeleting] = useState<{ id: string; label: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const meQ = useQuery({
+    queryKey: ["me-id"],
+    queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null,
+  });
+
   const q = useQuery({
     queryKey: ["all-profiles-roles"],
     queryFn: async () => {
@@ -202,7 +213,6 @@ function UsersAdmin() {
   });
 
   async function setRole(user_id: string, role: AppRole) {
-    // remove existing then add
     const { error: del } = await supabase.from("user_roles").delete().eq("user_id", user_id);
     if (del) return toast.error(del.message);
     const { error } = await supabase.from("user_roles").insert({ user_id, role });
@@ -212,14 +222,31 @@ function UsersAdmin() {
     qc.invalidateQueries({ queryKey: ["all-profiles-roles"] });
   }
 
+  async function confirmDelete() {
+    if (!deleting) return;
+    setBusy(true);
+    try {
+      await deleteUserFn({ data: { userId: deleting.id } });
+      toast.success("Conta excluída.");
+      setDeleting(null);
+      qc.invalidateQueries({ queryKey: ["all-profiles-roles"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao excluir conta.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const rows = q.data ?? [];
+  const meId = meQ.data;
 
   return (
     <div className="mt-6 space-y-2">
-      <p className="text-sm text-muted-foreground">Defina o papel de cada usuário cadastrado.</p>
+      <p className="text-sm text-muted-foreground">Defina o papel de cada usuário cadastrado. Como administrador, você pode excluir contas de outros usuários e visitantes.</p>
       <div className="card-elevated rounded-lg divide-y divide-border">
         {rows.map((u) => {
           const current: AppRole = u.roles.includes("admin") ? "admin" : u.roles.includes("user") ? "user" : "visitor";
+          const isSelf = u.id === meId;
           return (
             <div key={u.id} className="p-3 flex items-center gap-3">
               <div className="flex-1">
@@ -234,10 +261,36 @@ function UsersAdmin() {
                   <SelectItem value="visitor">Visitante</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                title={isSelf ? "Você não pode excluir sua própria conta" : "Excluir conta"}
+                disabled={isSelf}
+                onClick={() => setDeleting({ id: u.id, label: u.display_name || u.email || u.id })}
+              >
+                <Trash2 className="h-4 w-4 text-status-red" />
+              </Button>
             </div>
           );
         })}
       </div>
+
+      <Dialog open={!!deleting} onOpenChange={(o) => !o && !busy && setDeleting(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir conta</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que deseja excluir permanentemente a conta de <span className="font-medium text-foreground">{deleting?.label}</span>? Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleting(null)} disabled={busy}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={busy}>
+              {busy ? "Excluindo…" : "Excluir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
