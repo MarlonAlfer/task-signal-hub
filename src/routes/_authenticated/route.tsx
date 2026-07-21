@@ -2,14 +2,15 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { BackgroundMusic } from "@/components/BackgroundMusic";
+import { PendingGate } from "@/components/PendingGate";
 
 function AuthenticatedLayout() {
   useRealtimeSync();
   return (
-    <>
+    <PendingGate>
       <Outlet />
       <BackgroundMusic />
-    </>
+    </PendingGate>
   );
 }
 
