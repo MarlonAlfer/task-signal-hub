@@ -117,6 +117,34 @@ function Dashboard() {
   const dueToday = useMemo(() => tasks.filter((t) => isTaskDueToday(t)), [tasks]);
   const pendingToday = useMemo(() => dueToday.filter((t) => (statusById.get(t.id) ?? "pending") !== "done"), [dueToday, statusById]);
 
+  // Last "done" completion date for each monthly task
+  const monthlyTaskIds = useMemo(
+    () => tasks.filter((t) => t.category === "mensal").map((t) => t.id),
+    [tasks]
+  );
+  const monthlyDoneQ = useQuery({
+    queryKey: ["monthly-done", monthlyTaskIds.join(",")],
+    queryFn: async () => {
+      if (monthlyTaskIds.length === 0) return [] as { task_id: string; completion_date: string }[];
+      const { data, error } = await supabase
+        .from("task_completions")
+        .select("task_id, completion_date, status")
+        .in("task_id", monthlyTaskIds)
+        .eq("status", "done")
+        .order("completion_date", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as { task_id: string; completion_date: string }[];
+    },
+    enabled: monthlyTaskIds.length > 0,
+  });
+  const monthlyLastDoneById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of monthlyDoneQ.data ?? []) {
+      if (!map.has(c.task_id)) map.set(c.task_id, c.completion_date);
+    }
+    return map;
+  }, [monthlyDoneQ.data]);
+
   // Open-of-day dialog (once per day per browser)
   const [openDialog, setOpenDialog] = useState(false);
   useEffect(() => {
