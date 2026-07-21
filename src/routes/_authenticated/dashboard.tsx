@@ -683,7 +683,7 @@ function Dashboard() {
                             <SectionStatus pending={subPend} total={tasksSub.length} />
                           </button>
                         )}
-                        {isOpen(subKey) && (
+                        {(sub === "Geral" || isOpen(subKey)) && (
                           <div className="space-y-2">
                             {tasksSub.map((t) => (
                               <TrafficTaskItem
