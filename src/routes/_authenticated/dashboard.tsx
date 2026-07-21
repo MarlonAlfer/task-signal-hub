@@ -486,6 +486,39 @@ function Dashboard() {
           )}
         </section>
 
+        {/* Seletor de dia da semana — visualizar / editar tarefas de outro dia */}
+        <section className="card-elevated rounded-xl p-4 flex flex-wrap items-center gap-3">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <div className="flex-1 min-w-[200px]">
+            <h2 className="text-sm font-semibold">Ver / editar tarefas do dia</h2>
+            <p className="text-[11px] text-muted-foreground">
+              Selecione um dia para visualizar ou marcar tarefas. As alterações são registradas em <strong>hoje</strong>.
+            </p>
+          </div>
+          <div className="min-w-[180px]">
+            <Select value={String(viewWd)} onValueChange={(v) => setViewWd(Number(v))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[1,2,3,4,5,6].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    <span className="flex items-center gap-2">
+                      {WEEKDAY_LABELS[n]}
+                      {n === wd && <span className="rounded-full bg-status-green/20 text-status-green px-1.5 py-0.5 text-[9px] font-bold uppercase">Hoje</span>}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {!isViewingToday && (
+            <Button variant="ghost" size="sm" onClick={() => setViewWd(wd === 0 ? 1 : wd)}>
+              Voltar para hoje
+            </Button>
+          )}
+        </section>
+
+
+
 
         {/* Tarefas extras do dia */}
         <section className="card-elevated rounded-xl p-5 border-l-4 border-status-red">
