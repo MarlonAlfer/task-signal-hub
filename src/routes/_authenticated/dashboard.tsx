@@ -117,6 +117,34 @@ function Dashboard() {
   const dueToday = useMemo(() => tasks.filter((t) => isTaskDueToday(t)), [tasks]);
   const pendingToday = useMemo(() => dueToday.filter((t) => (statusById.get(t.id) ?? "pending") !== "done"), [dueToday, statusById]);
 
+  // Last "done" completion date for each monthly task
+  const monthlyTaskIds = useMemo(
+    () => tasks.filter((t) => t.category === "mensal").map((t) => t.id),
+    [tasks]
+  );
+  const monthlyDoneQ = useQuery({
+    queryKey: ["monthly-done", monthlyTaskIds.join(",")],
+    queryFn: async () => {
+      if (monthlyTaskIds.length === 0) return [] as { task_id: string; completion_date: string }[];
+      const { data, error } = await supabase
+        .from("task_completions")
+        .select("task_id, completion_date, status")
+        .in("task_id", monthlyTaskIds)
+        .eq("status", "done")
+        .order("completion_date", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as { task_id: string; completion_date: string }[];
+    },
+    enabled: monthlyTaskIds.length > 0,
+  });
+  const monthlyLastDoneById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of monthlyDoneQ.data ?? []) {
+      if (!map.has(c.task_id)) map.set(c.task_id, c.completion_date);
+    }
+    return map;
+  }, [monthlyDoneQ.data]);
+
   // Open-of-day dialog (once per day per browser)
   const [openDialog, setOpenDialog] = useState(false);
   useEffect(() => {
@@ -736,18 +764,26 @@ function Dashboard() {
                       {list.map((t) => {
                         const s = statusById.get(t.id) ?? "pending";
                         const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
+                        const lastDone = catKey === "mensal" ? monthlyLastDoneById.get(t.id) : undefined;
                         return (
                           <li key={t.id} className="flex items-start gap-2">
                             <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s === "done" ? "bg-status-green" : s === "in_progress" ? "bg-status-yellow" : "bg-status-red"}`} />
-                            <button
-                              type="button"
-                              disabled={!canEdit}
-                              onClick={() => cycle(t.id)}
-                              onDoubleClick={() => complete(t.id)}
-                              className={`text-left ${tone} disabled:cursor-not-allowed`}
-                            >
-                              {t.title}
-                            </button>
+                            <div className="flex-1 min-w-0">
+                              <button
+                                type="button"
+                                disabled={!canEdit}
+                                onClick={() => cycle(t.id)}
+                                onDoubleClick={() => complete(t.id)}
+                                className={`text-left ${tone} disabled:cursor-not-allowed`}
+                              >
+                                {t.title}
+                              </button>
+                              {lastDone && (
+                                <div className="text-[10px] text-muted-foreground/80 mt-0.5">
+                                  ✓ Concluída em {new Date(lastDone + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                </div>
+                              )}
+                            </div>
                           </li>
                         );
                       })}
