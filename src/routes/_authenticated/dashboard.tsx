@@ -546,6 +546,7 @@ function Dashboard() {
             <Sparkles className="h-4 w-4 text-status-yellow" />
             <h2 className="text-lg font-semibold">Tarefas extras de hoje</h2>
             <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+              <SectionStatus pending={pendingExtras.length} total={extras.length} />
               {pendingExtras.length > 0 && (
                 <span className="inline-flex items-center rounded-full bg-status-red/15 text-status-red px-2 py-0.5 font-semibold ring-1 ring-status-red/30">
                   {pendingExtras.length} pendente{pendingExtras.length === 1 ? "" : "s"}
