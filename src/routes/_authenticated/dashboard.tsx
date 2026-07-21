@@ -530,6 +530,88 @@ function Dashboard() {
           )}
         </section>
 
+        {/* Tarefas extras do dia */}
+        <section className="card-elevated rounded-xl p-5 border-l-4 border-status-red">
+          <button
+            type="button"
+            onClick={() => toggle("extras")}
+            className="w-full flex items-center gap-2 mb-3 text-left hover:opacity-80"
+            aria-expanded={isOpen("extras")}
+          >
+            {isOpen("extras") ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+            <Sparkles className="h-4 w-4 text-status-yellow" />
+            <h2 className="text-lg font-semibold">Tarefas extras de hoje</h2>
+            <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+              {pendingExtras.length > 0 && (
+                <span className="inline-flex items-center rounded-full bg-status-red/15 text-status-red px-2 py-0.5 font-semibold ring-1 ring-status-red/30">
+                  {pendingExtras.length} pendente{pendingExtras.length === 1 ? "" : "s"}
+                </span>
+              )}
+              <span>{extras.length}</span>
+            </span>
+          </button>
+          {isOpen("extras") && (
+            <div className="space-y-3">
+              {canEdit && (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); addExtra(); }}
+                  className="flex gap-2"
+                >
+                  <Input
+                    value={extraTitle}
+                    onChange={(e) => setExtraTitle(e.target.value)}
+                    placeholder="Adicionar tarefa extra… (fica pendente até dois cliques)"
+                    maxLength={200}
+                    disabled={addingExtra}
+                  />
+                  <Button type="submit" disabled={addingExtra || !extraTitle.trim()}>
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar
+                  </Button>
+                </form>
+              )}
+              {extras.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma tarefa extra hoje.</p>
+              ) : (
+                <div className="space-y-2">
+                  {extras.map((e) => {
+                    const s = (e.status as CompletionStatus) ?? "pending";
+                    return (
+                      <div key={e.id} className="flex items-stretch gap-2">
+                        <div className="flex-1">
+                          <TrafficTaskItem
+                            title={e.title}
+                            group="Extra"
+                            status={s}
+                            disabled={!canEdit}
+                            onCycle={() => cycleExtra(e.id, s)}
+                            onComplete={() => completeExtra(e.id)}
+                          />
+                        </div>
+                        {canEdit && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Excluir"
+                            onClick={() => removeExtra(e.id)}
+                            className="shrink-0 self-center text-muted-foreground hover:text-status-red"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Tarefa recém-criada entra como <span className="text-status-red font-semibold">pendente</span>. Dê <strong>dois cliques</strong> para marcar como concluída.
+              </p>
+            </div>
+          )}
+        </section>
+
+
+
 
         {wd === 0 && (
           <div className="card-elevated rounded-lg p-6 text-center">
