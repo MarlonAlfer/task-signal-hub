@@ -399,25 +399,10 @@ function Dashboard() {
   };
   const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
-  // Preview tasks for another weekday
-  const [previewWd, setPreviewWd] = useState<string>("");
-  const [previewOpen, setPreviewOpen] = useState<boolean>(true);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const isOpen = (k: string) => !collapsed[k];
   const toggle = (k: string) => setCollapsed((c) => ({ ...c, [k]: !c[k] }));
-  const previewTasks = useMemo(() => {
-    if (!previewWd) return [];
-    const n = Number(previewWd);
-    return tasks.filter((t) => t.category === "diaria" || (t.category === "semanal" && t.weekday === n));
-  }, [previewWd, tasks]);
-  const previewGrouped = useMemo(() => {
-    const g: Record<string, TaskRow[]> = {};
-    for (const t of previewTasks) {
-      const key = t.group_label ?? "Geral";
-      (g[key] ??= []).push(t);
-    }
-    return g;
-  }, [previewTasks]);
+
 
   return (
     <div className="min-h-screen relative">
