@@ -82,7 +82,7 @@ function AuthPage() {
             <Tabs defaultValue="signin">
               <TabsList className="grid grid-cols-2 mb-4 w-full">
                 <TabsTrigger value="signin">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+                <TabsTrigger value="signup">Registrar</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
