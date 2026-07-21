@@ -210,7 +210,7 @@ function Dashboard() {
     const { data: u } = await supabase.auth.getUser();
     const { data, error } = await supabase
       .from("extra_tasks")
-      .insert({ title, task_date: today, status: "pending", created_by: u.user?.id })
+      .insert({ title, task_date: today, status: "in_progress", created_by: u.user?.id })
       .select()
       .single();
     setAddingExtra(false);
