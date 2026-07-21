@@ -245,7 +245,7 @@ function UsersAdmin() {
       <p className="text-sm text-muted-foreground">Defina o papel de cada usuário cadastrado. Como administrador, você pode excluir contas de outros usuários e visitantes.</p>
       <div className="card-elevated rounded-lg divide-y divide-border">
         {rows.map((u) => {
-          const current: AppRole = u.roles.includes("admin") ? "admin" : u.roles.includes("user") ? "user" : "visitor";
+          const current: AppRole = u.roles.includes("admin") ? "admin" : u.roles.includes("user") ? "user" : u.roles.includes("visitor") ? "visitor" : "pending";
           const isSelf = u.id === meId;
           return (
             <div key={u.id} className="p-3 flex items-center gap-3">
