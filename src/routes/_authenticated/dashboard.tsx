@@ -560,7 +560,7 @@ function Dashboard() {
                   <Input
                     value={extraTitle}
                     onChange={(e) => setExtraTitle(e.target.value)}
-                    placeholder="Adicionar tarefa extra… (fica pendente até dois cliques)"
+                    placeholder="Adicionar tarefa extra… (inicia em andamento; dois cliques para concluir)"
                     maxLength={200}
                     disabled={addingExtra}
                   />
