@@ -637,10 +637,11 @@ function Dashboard() {
                   <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
                   {groupKey === CATEGORY_LABELS.semanal && (
                     <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1 flex items-center gap-2">
-                      <span>{WEEKDAY_LABELS[wd]}</span>
-                      <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold ring-1 ring-status-green/30">Hoje</span>
+                      <span>{WEEKDAY_LABELS[viewWd]}</span>
+                      {isViewingToday && <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold ring-1 ring-status-green/30">Hoje</span>}
                     </p>
                   )}
+
                 </div>
                 <span className="ml-auto text-xs text-muted-foreground">{list.length}</span>
               </button>
