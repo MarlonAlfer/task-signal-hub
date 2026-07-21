@@ -603,13 +603,14 @@ function Dashboard() {
 
 
 
-        {wd === 0 && (
+        {viewWd === 0 && (
           <div className="card-elevated rounded-lg p-6 text-center">
-            <p className="text-muted-foreground">Hoje é domingo — nenhuma tarefa está programada. Aproveite o descanso!</p>
+            <p className="text-muted-foreground">Domingo — nenhuma tarefa programada.</p>
           </div>
         )}
 
-        {Object.keys(highlightGrouped).length === 0 && wd !== 0 && !tasksQ.isLoading && (
+        {Object.keys(highlightGrouped).length === 0 && viewWd !== 0 && !tasksQ.isLoading && (
+
           <div className="card-elevated rounded-lg p-6 text-center text-muted-foreground">
             Nenhuma tarefa para hoje.
           </div>
