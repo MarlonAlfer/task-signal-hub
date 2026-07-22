@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      deadlines: {
+        Row: {
+          acknowledged_dates: string[]
+          completed: boolean
+          created_at: string
+          created_by: string | null
+          due_on: string
+          id: string
+          notes: string | null
+          started_on: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_dates?: string[]
+          completed?: boolean
+          created_at?: string
+          created_by?: string | null
+          due_on: string
+          id?: string
+          notes?: string | null
+          started_on: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_dates?: string[]
+          completed?: boolean
+          created_at?: string
+          created_by?: string | null
+          due_on?: string
+          id?: string
+          notes?: string | null
+          started_on?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       extra_tasks: {
         Row: {
           created_at: string
