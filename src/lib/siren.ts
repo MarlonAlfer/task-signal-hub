@@ -1,34 +1,53 @@
-// Ambulance-like two-tone siren using Web Audio API.
-let _ctx: AudioContext | null = null;
-function getCtx(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AC) return null;
-  if (!_ctx) _ctx = new AC();
-  return _ctx;
+// Female voice alert using Web Speech API.
+// Kept the exported name `playAmbulanceSiren` for backwards compatibility.
+const MESSAGE = "Atenção! Você tem um compromisso ainda pendente.";
+
+function pickFemalePtVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+  const pt = voices.filter((v) => /pt(-|_)?(BR|PT)?/i.test(v.lang));
+  const femaleHints = /(female|mulher|feminina|Luciana|Joana|Ines|Inês|Helena|Maria|Fernanda|Camila|Vitoria|Vitória|Google.*Portugu)/i;
+  return (
+    pt.find((v) => femaleHints.test(v.name)) ||
+    pt[0] ||
+    voices.find((v) => femaleHints.test(v.name)) ||
+    voices[0] ||
+    null
+  );
 }
 
-export function playAmbulanceSiren(durationSec = 4) {
-  const ctx = getCtx();
-  if (!ctx) return;
+function speakOnce(times: number) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  const synth = window.speechSynthesis;
   try {
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = "sawtooth";
-    const start = ctx.currentTime;
-    // Alternate 650Hz / 950Hz every 0.5s
-    const step = 0.5;
-    for (let t = 0; t < durationSec; t += step) {
-      o.frequency.setValueAtTime(t % 1 === 0 ? 650 : 950, start + t);
+    synth.cancel();
+    const voices = synth.getVoices();
+    const voice = pickFemalePtVoice(voices);
+    for (let i = 0; i < times; i++) {
+      const u = new SpeechSynthesisUtterance(MESSAGE);
+      u.lang = voice?.lang || "pt-BR";
+      if (voice) u.voice = voice;
+      u.rate = 1;
+      u.pitch = 1.15;
+      u.volume = 1;
+      synth.speak(u);
     }
-    g.gain.setValueAtTime(0, start);
-    g.gain.linearRampToValueAtTime(0.25, start + 0.05);
-    g.gain.setValueAtTime(0.25, start + durationSec - 0.1);
-    g.gain.exponentialRampToValueAtTime(0.001, start + durationSec);
-    o.connect(g).connect(ctx.destination);
-    o.start(start);
-    o.stop(start + durationSec);
   } catch {
     /* ignore */
   }
+}
+
+export function playAmbulanceSiren(repeats = 2) {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  const synth = window.speechSynthesis;
+  if (synth.getVoices().length === 0) {
+    // Voices load async on some browsers.
+    const onVoices = () => {
+      synth.removeEventListener?.("voiceschanged", onVoices);
+      speakOnce(repeats);
+    };
+    synth.addEventListener?.("voiceschanged", onVoices);
+    // Fallback in case the event never fires.
+    setTimeout(() => speakOnce(repeats), 300);
+    return;
+  }
+  speakOnce(repeats);
 }
