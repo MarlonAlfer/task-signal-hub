@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { BackgroundMusic } from "@/components/BackgroundMusic";
 import { PendingGate } from "@/components/PendingGate";
+import { DeadlineAlerts } from "@/components/DeadlineAlerts";
 
 function AuthenticatedLayout() {
   useRealtimeSync();
@@ -10,6 +11,7 @@ function AuthenticatedLayout() {
     <PendingGate>
       <Outlet />
       <BackgroundMusic />
+      <DeadlineAlerts />
     </PendingGate>
   );
 }
