@@ -11,7 +11,7 @@ import { WEEKDAY_LABELS, CATEGORY_LABELS, todayISO, todayWeekday, isFriday, star
 import { useRoles, highestRole } from "@/hooks/useRoles";
 import { logAudit } from "@/lib/audit";
 import type { CompletionStatus, TaskRow } from "@/lib/types";
-import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, ChevronDown, ChevronRight, UserCog, History, Volume2, Plus, Trash2, Sparkles } from "lucide-react";
+import { Activity, LogOut, Shield, ClipboardList, AlertTriangle, CalendarDays, CalendarClock, ChevronDown, ChevronRight, UserCog, History, Volume2, Plus, Trash2, Sparkles } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { GroupNote } from "@/components/GroupNote";
@@ -464,6 +464,9 @@ function Dashboard() {
             <Badge variant="outline" className="uppercase text-xs">
               {role === "admin" ? "Administrador" : role === "user" ? "Usuário" : "Visitante"}
             </Badge>
+            <Button asChild variant="ghost" size="sm" title="Prazos" className="text-muted-foreground hover:text-foreground">
+              <Link to="/deadlines"><CalendarClock className="h-4 w-4 mr-2" />Prazos</Link>
+            </Button>
             <Button asChild variant="ghost" size="icon" title="Histórico" className="text-muted-foreground hover:text-foreground">
               <Link to="/history"><History className="h-4 w-4" /></Link>
             </Button>

@@ -34,6 +34,9 @@ export function useRealtimeSync() {
       .on("postgres_changes", { event: "*", schema: "public", table: "extra_tasks" }, () => {
         qc.invalidateQueries({ queryKey: ["extra-tasks"] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "deadlines" }, () => {
+        qc.invalidateQueries({ queryKey: ["deadlines"] });
+      })
       .subscribe();
 
     return () => {
