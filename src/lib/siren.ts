@@ -1,32 +1,49 @@
-// Female voice alert using Web Speech API.
-// Kept the exported name `playAmbulanceSiren` for backwards compatibility.
+// Natural-sounding female voice alert powered by Lovable AI TTS.
+// Falls back to the browser's Web Speech API when the backend call fails.
+import { generateAlertVoice } from "./tts.functions";
+
 const MESSAGE = "Atenção! Você tem um compromisso ainda pendente.";
 
-function pickFemalePtVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
-  const pt = voices.filter((v) => /pt(-|_)?(BR|PT)?/i.test(v.lang));
-  const femaleHints = /(female|mulher|feminina|Luciana|Joana|Ines|Inês|Helena|Maria|Fernanda|Camila|Vitoria|Vitória|Google.*Portugu)/i;
-  return (
-    pt.find((v) => femaleHints.test(v.name)) ||
-    pt[0] ||
-    voices.find((v) => femaleHints.test(v.name)) ||
-    voices[0] ||
-    null
-  );
+let cachedUrl: string | null = null;
+let loading: Promise<string | null> | null = null;
+
+async function loadAudioUrl(): Promise<string | null> {
+  if (cachedUrl) return cachedUrl;
+  if (loading) return loading;
+  loading = (async () => {
+    try {
+      const res = await generateAlertVoice({ data: { text: MESSAGE } });
+      const bin = atob(res.audio);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: res.mime });
+      cachedUrl = URL.createObjectURL(blob);
+      return cachedUrl;
+    } catch (e) {
+      console.error("TTS load failed, falling back to speechSynthesis", e);
+      return null;
+    } finally {
+      loading = null;
+    }
+  })();
+  return loading;
 }
 
-function speakOnce(times: number) {
+function fallbackSpeak(times: number) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const synth = window.speechSynthesis;
   try {
     synth.cancel();
     const voices = synth.getVoices();
-    const voice = pickFemalePtVoice(voices);
+    const pt = voices.filter((v) => /pt(-|_)?(BR|PT)?/i.test(v.lang));
+    const hint = /(female|mulher|feminina|Luciana|Joana|Ines|Inês|Helena|Maria|Fernanda|Camila|Google.*Portugu)/i;
+    const voice = pt.find((v) => hint.test(v.name)) || pt[0] || voices[0] || null;
     for (let i = 0; i < times; i++) {
       const u = new SpeechSynthesisUtterance(MESSAGE);
       u.lang = voice?.lang || "pt-BR";
       if (voice) u.voice = voice;
-      u.rate = 1;
-      u.pitch = 1.15;
+      u.rate = 0.95;
+      u.pitch = 1.05;
       u.volume = 1;
       synth.speak(u);
     }
@@ -35,19 +52,26 @@ function speakOnce(times: number) {
   }
 }
 
-export function playAmbulanceSiren(repeats = 2) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  const synth = window.speechSynthesis;
-  if (synth.getVoices().length === 0) {
-    // Voices load async on some browsers.
-    const onVoices = () => {
-      synth.removeEventListener?.("voiceschanged", onVoices);
-      speakOnce(repeats);
-    };
-    synth.addEventListener?.("voiceschanged", onVoices);
-    // Fallback in case the event never fires.
-    setTimeout(() => speakOnce(repeats), 300);
+async function playCached(times: number) {
+  const url = await loadAudioUrl();
+  if (!url) {
+    fallbackSpeak(times);
     return;
   }
-  speakOnce(repeats);
+  let count = 0;
+  const playNext = () => {
+    if (count >= times) return;
+    count++;
+    const audio = new Audio(url);
+    audio.volume = 1;
+    audio.onended = () => {
+      if (count < times) setTimeout(playNext, 400);
+    };
+    audio.play().catch(() => fallbackSpeak(times - count + 1));
+  };
+  playNext();
+}
+
+export function playAmbulanceSiren(repeats = 2) {
+  void playCached(repeats);
 }
