@@ -7,7 +7,7 @@ export const generateAlertVoice = createServerFn({ method: "POST" })
     if (!input?.text || typeof input.text !== "string") {
       throw new Error("text obrigatório");
     }
-    return { text: input.text, voice: input.voice || "coral" };
+    return { text: input.text, voice: input.voice || "sage" };
   })
   .handler(async ({ data }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
@@ -25,7 +25,7 @@ export const generateAlertVoice = createServerFn({ method: "POST" })
         voice: data.voice,
         response_format: "mp3",
         instructions:
-          "Fale em português do Brasil com uma voz feminina muito suave, delicada, doce e acolhedora, como se fosse uma amiga próxima falando bem baixinho ao pé do ouvido pela manhã. Entonação bem humana, natural, calorosa, com respirações leves, ritmo tranquilo e pausado. Nada robótica, nada mecânica, sem soar como assistente virtual — apenas natural e gentil.",
+          "Fale em português do Brasil com uma voz feminina jovem, amigável e sensual ao mesmo tempo. Tom quente, aveludado, levemente sussurrado, com um sorriso na voz e uma pitada de charme. Ritmo tranquilo, pausas naturais, respiração leve. Estenda carinhosamente o cumprimento inicial (o 'Bom diaaaa' deve soar arrastado, doce e brincalhão). Nada robótica, nada formal — soe humana, próxima, cativante e envolvente.",
       }),
     });
 
