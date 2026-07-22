@@ -2,7 +2,7 @@
 // Falls back to the browser's Web Speech API when the backend call fails.
 import { generateAlertVoice } from "./tts.functions";
 
-const MESSAGE = "Atenção! Você tem um compromisso ainda pendente.";
+const MESSAGE = "Bom dia!! Passando pra lembrar que hoje é o dia da conclusão do serviço.";
 
 let cachedUrl: string | null = null;
 let loading: Promise<string | null> | null = null;
