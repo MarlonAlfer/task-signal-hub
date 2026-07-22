@@ -7,7 +7,7 @@ export const generateAlertVoice = createServerFn({ method: "POST" })
     if (!input?.text || typeof input.text !== "string") {
       throw new Error("text obrigatório");
     }
-    return { text: input.text, voice: input.voice || "shimmer" };
+    return { text: input.text, voice: input.voice || "coral" };
   })
   .handler(async ({ data }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
