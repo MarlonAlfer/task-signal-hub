@@ -63,10 +63,10 @@ function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
-        <div className="mb-4 flex justify-end">
-          <LanguageSwitcher compact />
-        </div>
+      <div className="fixed top-3 right-3 z-50">
+        <LanguageSwitcher />
+      </div>
+      <div className="w-full max-w-md pt-10">
         <div className="mb-8 flex items-center gap-3 justify-center">
           <div className="grid grid-cols-1 gap-1">
             <span className="h-3 w-3 rounded-full bg-status-red shadow-glow-red" />

@@ -507,6 +507,10 @@ function Dashboard() {
       </div>
       <div className="relative z-[1]">
 
+      <div className="fixed top-3 right-3 z-50">
+        <LanguageSwitcher />
+      </div>
+
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-4">
           <div className="flex items-center gap-3">
@@ -524,7 +528,6 @@ function Dashboard() {
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <LanguageSwitcher compact />
             <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="max-w-[160px] truncate">
               <UserCog className="h-4 w-4 mr-2 shrink-0" />
               <span className="truncate">{profileQ.data?.display_name ?? t("common.profile")}</span>
