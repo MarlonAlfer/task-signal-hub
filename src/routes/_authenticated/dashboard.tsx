@@ -169,7 +169,7 @@ function Dashboard() {
     if (t.category === "mensal") {
       return monthlyStatusById.get(t.id) ?? "pending";
     }
-    return getStatus(t);
+    return statusById.get(t.id) ?? "pending";
   };
 
   const pendingToday = useMemo(
