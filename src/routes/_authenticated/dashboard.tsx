@@ -16,6 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { GroupNote } from "@/components/GroupNote";
 import { playCompletionSound } from "@/lib/sound-effects";
+import { useTranslation } from "react-i18next";
+import { currentLocale } from "@/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
