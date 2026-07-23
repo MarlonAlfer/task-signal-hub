@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, History as HistoryIcon, CheckCircle2, Circle, Clock, Search, StickyNote } from "lucide-react";
 import { CATEGORY_LABELS, WEEKDAY_LABELS } from "@/lib/task-utils";
 import type { TaskRow } from "@/lib/types";
+import { useTranslation } from "react-i18next";
+import { currentLocale } from "@/i18n";
 
 export const Route = createFileRoute("/_authenticated/history")({
   component: HistoryPage,
@@ -19,6 +21,7 @@ function todayISO() {
 type StatusFilter = "all" | "done" | "in_progress" | "pending";
 
 function HistoryPage() {
+  const { t } = useTranslation();
   const [date, setDate] = useState<string>(todayISO());
   const [q, setQ] = useState<string>("");
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -71,19 +74,19 @@ function HistoryPage() {
   const dueThatDay = useMemo(() => {
     const tasks = tasksQ.data ?? [];
     if (wd === 0) return [] as TaskRow[];
-    return tasks.filter((t) => {
-      if (!t.active) return statusById.has(t.id);
-      if (t.category === "diaria") return true;
-      if (t.category === "semanal") return t.weekday === wd;
+    return tasks.filter((task) => {
+      if (!task.active) return statusById.has(task.id);
+      if (task.category === "diaria") return true;
+      if (task.category === "semanal") return task.weekday === wd;
       return true;
     });
   }, [tasksQ.data, wd, statusById]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return dueThatDay.filter((t) => {
-      if (needle && !t.title.toLowerCase().includes(needle)) return false;
-      const s = statusById.get(t.id) ?? "pending";
+    return dueThatDay.filter((task) => {
+      if (needle && !task.title.toLowerCase().includes(needle)) return false;
+      const s = statusById.get(task.id) ?? "pending";
       if (filter === "all") return true;
       return s === filter;
     });
@@ -91,21 +94,21 @@ function HistoryPage() {
 
   const grouped = useMemo(() => {
     const g: Record<string, TaskRow[]> = {};
-    for (const t of filtered) {
-      const key = CATEGORY_LABELS[t.category] ?? t.category;
-      (g[key] ??= []).push(t);
+    for (const task of filtered) {
+      const key = CATEGORY_LABELS[task.category] ?? task.category;
+      (g[key] ??= []).push(task);
     }
     return g;
   }, [filtered]);
 
   const stats = {
     total: dueThatDay.length,
-    done: dueThatDay.filter((t) => statusById.get(t.id) === "done").length,
-    inProgress: dueThatDay.filter((t) => statusById.get(t.id) === "in_progress").length,
-    pending: dueThatDay.filter((t) => !statusById.has(t.id)).length,
+    done: dueThatDay.filter((task) => statusById.get(task.id) === "done").length,
+    inProgress: dueThatDay.filter((task) => statusById.get(task.id) === "in_progress").length,
+    pending: dueThatDay.filter((task) => !statusById.has(task.id)).length,
   };
 
-  const dateLabel = new Date(date + "T00:00:00").toLocaleDateString("pt-BR", {
+  const dateLabel = new Date(date + "T00:00:00").toLocaleDateString(currentLocale(), {
     weekday: "long", day: "2-digit", month: "long", year: "numeric",
   });
 
@@ -114,11 +117,11 @@ function HistoryPage() {
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-3 flex-wrap">
           <Button asChild variant="ghost" size="sm">
-            <Link to="/dashboard"><ArrowLeft className="h-4 w-4 mr-2" />Voltar</Link>
+            <Link to="/dashboard"><ArrowLeft className="h-4 w-4 mr-2" />{t("common.back")}</Link>
           </Button>
           <div className="flex items-center gap-2">
             <HistoryIcon className="h-4 w-4 text-muted-foreground" />
-            <h1 className="text-base font-semibold">Histórico de tarefas</h1>
+            <h1 className="text-base font-semibold">{t("history.title")}</h1>
           </div>
           <div className="ml-auto flex items-center gap-2 flex-wrap">
             <div className="relative">
@@ -126,11 +129,11 @@ function HistoryPage() {
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Buscar tarefa…"
+                placeholder={t("history.searchPlaceholder")}
                 className="pl-8 w-[220px]"
               />
             </div>
-            <label className="text-xs text-muted-foreground">Data:</label>
+            <label className="text-xs text-muted-foreground">{t("history.date")}</label>
             <Input
               type="date"
               value={date}
@@ -146,23 +149,23 @@ function HistoryPage() {
         <section className="card-elevated rounded-xl p-4">
           <p className="text-sm text-muted-foreground capitalize">{dateLabel}</p>
           {wd === 0 ? (
-            <p className="text-sm mt-2">Domingo — nenhuma tarefa programada.</p>
+            <p className="text-sm mt-2">{t("history.sundayNone")}</p>
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-                <FilterStat label="Programadas" value={stats.total} active={filter === "all"} onClick={() => setFilter("all")} />
-                <FilterStat label="Concluídas" value={stats.done} tone="green" active={filter === "done"} onClick={() => setFilter("done")} />
-                <FilterStat label="Em andamento" value={stats.inProgress} tone="yellow" active={filter === "in_progress"} onClick={() => setFilter("in_progress")} />
-                <FilterStat label="Não feitas" value={stats.pending} tone="red" active={filter === "pending"} onClick={() => setFilter("pending")} />
+                <FilterStat label={t("history.scheduled")} value={stats.total} active={filter === "all"} onClick={() => setFilter("all")} />
+                <FilterStat label={t("history.done")} value={stats.done} tone="green" active={filter === "done"} onClick={() => setFilter("done")} />
+                <FilterStat label={t("history.inProgress")} value={stats.inProgress} tone="yellow" active={filter === "in_progress"} onClick={() => setFilter("in_progress")} />
+                <FilterStat label={t("history.notDone")} value={stats.pending} tone="red" active={filter === "pending"} onClick={() => setFilter("pending")} />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-2">Toque num quadro para filtrar por estado.</p>
+              <p className="text-[11px] text-muted-foreground mt-2">{t("history.filterHint")}</p>
             </>
           )}
         </section>
 
         {Object.keys(grouped).length === 0 && wd !== 0 && (
           <div className="card-elevated rounded-xl p-6 text-center text-muted-foreground text-sm">
-            {q || filter !== "all" ? "Nenhum resultado com esses filtros." : "Nenhuma tarefa registrada neste dia."}
+            {q || filter !== "all" ? t("history.noResults") : t("history.noneRegistered")}
           </div>
         )}
 
@@ -180,19 +183,19 @@ function HistoryPage() {
                 )}
               </h2>
               <ul className="space-y-2">
-                {list.map((t) => {
-                  const s = statusById.get(t.id);
+                {list.map((task) => {
+                  const s = statusById.get(task.id);
                   const icon = s === "done"
                     ? <CheckCircle2 className="h-4 w-4 text-status-green" />
                     : s === "in_progress"
                     ? <Clock className="h-4 w-4 text-status-yellow" />
                     : <Circle className="h-4 w-4 text-status-red" />;
-                  const label = s === "done" ? "Concluída" : s === "in_progress" ? "Em andamento" : "Não feita";
+                  const label = s === "done" ? t("status.done") : s === "in_progress" ? t("status.inProgress") : t("status.notDone");
                   const tone = s === "done" ? "text-status-green" : s === "in_progress" ? "text-status-yellow" : "text-status-red";
                   return (
-                    <li key={t.id} className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2">
+                    <li key={task.id} className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2">
                       {icon}
-                      <span className="text-sm flex-1">{t.title}</span>
+                      <span className="text-sm flex-1">{task.title}</span>
                       <span className={`text-xs font-medium uppercase tracking-wider ${tone}`}>{label}</span>
                     </li>
                   );
@@ -201,7 +204,7 @@ function HistoryPage() {
               {note && note.trim() && (
                 <div className="mt-3 rounded-lg border border-border/50 bg-background/30 backdrop-blur p-3">
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
-                    <StickyNote className="h-3.5 w-3.5" /> Observação
+                    <StickyNote className="h-3.5 w-3.5" /> {t("history.note")}
                   </div>
                   <p className="text-sm whitespace-pre-wrap">{note}</p>
                 </div>
