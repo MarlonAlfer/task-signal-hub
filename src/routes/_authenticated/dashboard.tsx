@@ -115,35 +115,68 @@ function Dashboard() {
 
   const tasks = tasksQ.data ?? [];
   const dueToday = useMemo(() => tasks.filter((t) => isTaskDueToday(t)), [tasks]);
-  const pendingToday = useMemo(() => dueToday.filter((t) => (statusById.get(t.id) ?? "pending") !== "done"), [dueToday, statusById]);
 
-  // Last "done" completion date for each monthly task
+  // Current month window (YYYY-MM-01 .. YYYY-MM-last)
+  const monthRange = useMemo(() => {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    return { start: iso(first), end: iso(last) };
+  }, []);
+
   const monthlyTaskIds = useMemo(
     () => tasks.filter((t) => t.category === "mensal").map((t) => t.id),
     [tasks]
   );
+  // All completions in the current month for monthly tasks — used to compute
+  // both the last "done" date and the effective status that persists all month.
   const monthlyDoneQ = useQuery({
-    queryKey: ["monthly-done", monthlyTaskIds.join(",")],
+    queryKey: ["monthly-done", monthRange.start, monthRange.end, monthlyTaskIds.join(",")],
     queryFn: async () => {
-      if (monthlyTaskIds.length === 0) return [] as { task_id: string; completion_date: string }[];
+      if (monthlyTaskIds.length === 0) return [] as { task_id: string; completion_date: string; status: CompletionStatus }[];
       const { data, error } = await supabase
         .from("task_completions")
         .select("task_id, completion_date, status")
         .in("task_id", monthlyTaskIds)
-        .eq("status", "done")
+        .gte("completion_date", monthRange.start)
+        .lte("completion_date", monthRange.end)
         .order("completion_date", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as { task_id: string; completion_date: string }[];
+      return (data ?? []) as { task_id: string; completion_date: string; status: CompletionStatus }[];
     },
     enabled: monthlyTaskIds.length > 0,
   });
   const monthlyLastDoneById = useMemo(() => {
     const map = new Map<string, string>();
     for (const c of monthlyDoneQ.data ?? []) {
-      if (!map.has(c.task_id)) map.set(c.task_id, c.completion_date);
+      if (c.status === "done" && !map.has(c.task_id)) map.set(c.task_id, c.completion_date);
     }
     return map;
   }, [monthlyDoneQ.data]);
+  // Effective status this month = status of the latest completion row in current month.
+  const monthlyStatusById = useMemo(() => {
+    const map = new Map<string, CompletionStatus>();
+    for (const c of monthlyDoneQ.data ?? []) {
+      if (!map.has(c.task_id)) map.set(c.task_id, c.status);
+    }
+    return map;
+  }, [monthlyDoneQ.data]);
+
+  // Resolve the status a task should show today.
+  // Monthly tasks persist their status across the current month.
+  const getStatus = (t: { id: string; category: string }): CompletionStatus => {
+    if (t.category === "mensal") {
+      return monthlyStatusById.get(t.id) ?? "pending";
+    }
+    return statusById.get(t.id) ?? "pending";
+  };
+
+  const pendingToday = useMemo(
+    () => dueToday.filter((t) => getStatus(t) !== "done"),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dueToday, statusById, monthlyStatusById]
+  );
 
   // Open-of-day dialog (once per day per browser)
   const [openDialog, setOpenDialog] = useState(false);
@@ -195,12 +228,32 @@ function Dashboard() {
       toast.error("Visitantes não podem editar tarefas.");
       return;
     }
-    const prev = statusById.get(taskId) ?? "pending";
-    // optimistic update handled by refetch
+    const task = tasks.find((t) => t.id === taskId);
+    const isMonthly = task?.category === "mensal";
+    const prev = isMonthly
+      ? (monthlyStatusById.get(taskId) ?? "pending")
+      : (statusById.get(taskId) ?? "pending");
+
     if (newStatus === "pending") {
-      const { error } = await supabase.from("task_completions").delete().eq("task_id", taskId).eq("completion_date", today);
+      // Monthly tasks: clear the whole current month so the toggle un-marks it
+      // across every day of the month, not just today.
+      const q = supabase.from("task_completions").delete().eq("task_id", taskId);
+      const { error } = isMonthly
+        ? await q.gte("completion_date", monthRange.start).lte("completion_date", monthRange.end)
+        : await q.eq("completion_date", today);
       if (error) return toast.error(error.message);
     } else {
+      if (isMonthly) {
+        // Remove any prior month rows for this task so only today's row remains
+        // as the source of truth for the current month.
+        await supabase
+          .from("task_completions")
+          .delete()
+          .eq("task_id", taskId)
+          .gte("completion_date", monthRange.start)
+          .lte("completion_date", monthRange.end)
+          .neq("completion_date", today);
+      }
       const { error } = await supabase.from("task_completions").upsert(
         { task_id: taskId, completion_date: today, status: newStatus, updated_by: (await supabase.auth.getUser()).data.user?.id, updated_at: new Date().toISOString() },
         { onConflict: "task_id,completion_date" }
@@ -210,10 +263,14 @@ function Dashboard() {
     await logAudit("task_status_change", "task_completions", taskId, { from: prev, to: newStatus, date: today });
     qc.invalidateQueries({ queryKey: ["completions", today] });
     qc.invalidateQueries({ queryKey: ["week-pending", startOfWeekISO()] });
+    qc.invalidateQueries({ queryKey: ["monthly-done"] });
   }
 
   function cycle(taskId: string) {
-    const s = statusById.get(taskId) ?? "pending";
+    const task = tasks.find((t) => t.id === taskId);
+    const s = task?.category === "mensal"
+      ? (monthlyStatusById.get(taskId) ?? "pending")
+      : (statusById.get(taskId) ?? "pending");
     if (s === "pending") setStatus(taskId, "in_progress");
     else if (s === "in_progress") setStatus(taskId, "pending");
     else setStatus(taskId, "pending");
@@ -316,7 +373,7 @@ function Dashboard() {
   // Monthly floating alert — first business day of the month, until acknowledged
   const [monthAlertOpen, setMonthAlertOpen] = useState(false);
   const pendingMensalList = useMemo(
-    () => otherTasks.filter((t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done"),
+    () => otherTasks.filter((t) => t.category === "mensal" && (getStatus(t)) !== "done"),
     [otherTasks, statusById]
   );
   useEffect(() => {
@@ -393,9 +450,9 @@ function Dashboard() {
 
   const stats = {
     total: dueToday.length,
-    done: dueToday.filter((t) => statusById.get(t.id) === "done").length,
-    inProgress: dueToday.filter((t) => statusById.get(t.id) === "in_progress").length,
-    pending: dueToday.filter((t) => (statusById.get(t.id) ?? "pending") === "pending").length,
+    done: dueToday.filter((t) => getStatus(t) === "done").length,
+    inProgress: dueToday.filter((t) => getStatus(t) === "in_progress").length,
+    pending: dueToday.filter((t) => (getStatus(t)) === "pending").length,
   };
   const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
@@ -642,7 +699,7 @@ function Dashboard() {
             return acc;
           }, {});
           const sectionKey = `hl:${groupKey}`;
-          const pendCount = list.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
+          const pendCount = list.filter((t) => (getStatus(t)) !== "done").length;
           return (
             <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
               <button
@@ -671,7 +728,7 @@ function Dashboard() {
                 <div className="space-y-4">
                   {Object.entries(bySub).map(([sub, tasksSub]) => {
                     const subKey = `${sectionKey}:${sub}`;
-                    const subPend = tasksSub.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
+                    const subPend = tasksSub.filter((t) => (getStatus(t)) !== "done").length;
                     return (
                       <div key={sub}>
                         {sub !== "Geral" && (
@@ -693,7 +750,7 @@ function Dashboard() {
                                 key={t.id}
                                 title={t.title}
                                 group={null}
-                                status={statusById.get(t.id) ?? "pending"}
+                                status={getStatus(t)}
                                 disabled={!canEdit}
                                 onCycle={() => cycle(t.id)}
                                 onComplete={() => complete(t.id)}
@@ -723,7 +780,7 @@ function Dashboard() {
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
               <span className="ml-auto flex items-center gap-2">
                 <SectionStatus
-                  pending={otherTasks.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length}
+                  pending={otherTasks.filter((t) => (getStatus(t)) !== "done").length}
                   total={otherTasks.length}
                 />
               </span>
@@ -733,7 +790,7 @@ function Dashboard() {
               {Object.entries(otherGrouped).map(([groupKey, list]) => {
                 const k = `other:${groupKey}`;
                 const catKey = (Object.entries(CATEGORY_LABELS).find(([, v]) => v === groupKey)?.[0]) ?? "";
-                const pendCount = list.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
+                const pendCount = list.filter((t) => (getStatus(t)) !== "done").length;
                 return (
                 <div key={groupKey} className="rounded-lg border border-border p-3">
                   <button
@@ -752,7 +809,7 @@ function Dashboard() {
                   {isOpen(k) && (
                     <ul className="space-y-1 text-xs">
                       {list.map((t) => {
-                        const s = statusById.get(t.id) ?? "pending";
+                        const s = getStatus(t);
                         const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
                         const lastDone = catKey === "mensal" ? monthlyLastDoneById.get(t.id) : undefined;
                         return (
@@ -814,7 +871,7 @@ function Dashboard() {
               </p>
               <ul className="text-xs space-y-1 mb-3 max-h-32 overflow-auto">
                 {otherTasks
-                  .filter((t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done")
+                  .filter((t) => t.category === "mensal" && (getStatus(t)) !== "done")
                   .slice(0, 6)
                   .map((t) => (
                     <li key={t.id} className="text-muted-foreground">• {t.title}</li>
