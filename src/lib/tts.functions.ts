@@ -25,7 +25,7 @@ export const generateAlertVoice = createServerFn({ method: "POST" })
         voice: data.voice,
         response_format: "mp3",
         instructions:
-          "Fale como uma amiga conversando de perto, num português do Brasil natural e fluido. Tom feminino claro, leve e envolvente, com respiração natural entre as palavras e entonação calma. Dê a frase como um lembrete casual no dia a dia — sem ênfase exagerada, sem pressa, quase sussurrando. Nada robótica, nada metálica. Simplesmente humana e aconchegante.",
+          "Fale em português de Portugal (europeu), como uma amiga conversando de perto. Tom feminino claro, leve e envolvente, com respiração natural entre as palavras e entonação calma. Pronuncia à portuguesa, com 'Bom dia' suave e natural. Dê a frase como um lembrete casual no dia a dia — sem ênfase exagerada, sem pressa, quase sussurrando. Nada robótica, nada metálica. Simplesmente humana e aconchegante.",
       }),
     });
 

@@ -77,10 +77,11 @@ function fallbackSpeak() {
   try {
     synth.cancel();
     const voices = synth.getVoices();
-    const pt = voices.filter((v) => /pt(-|_)?(BR|PT)?/i.test(v.lang));
-    const voice = pt[0] || voices[0] || null;
+    const ptPT = voices.filter((v) => /pt(-|_)?PT/i.test(v.lang));
+    const pt = voices.filter((v) => /pt/i.test(v.lang));
+    const voice = ptPT[0] || pt[0] || voices[0] || null;
     const u = new SpeechSynthesisUtterance(MESSAGE);
-    u.lang = voice?.lang || "pt-BR";
+    u.lang = voice?.lang || "pt-PT";
     if (voice) u.voice = voice;
     u.rate = 1;
     u.pitch = 1.1;
