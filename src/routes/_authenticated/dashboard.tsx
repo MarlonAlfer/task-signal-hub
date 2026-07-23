@@ -825,22 +825,22 @@ function Dashboard() {
                   </button>
                   {isOpen(k) && (
                     <ul className="space-y-1 text-xs">
-                      {list.map((t) => {
-                        const s = getStatus(t);
+                      {list.map((task) => {
+                        const s = getStatus(task);
                         const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
-                        const lastDone = catKey === "mensal" ? monthlyLastDoneById.get(t.id) : undefined;
+                        const lastDone = catKey === "mensal" ? monthlyLastDoneById.get(task.id) : undefined;
                         return (
-                          <li key={t.id} className="flex items-start gap-2">
+                          <li key={task.id} className="flex items-start gap-2">
                             <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s === "done" ? "bg-status-green" : s === "in_progress" ? "bg-status-yellow" : "bg-status-red"}`} />
                             <div className="flex-1 min-w-0">
                               <button
                                 type="button"
                                 disabled={!canEdit}
-                                onClick={() => cycle(t.id)}
-                                onDoubleClick={() => complete(t.id)}
+                                onClick={() => cycle(task.id)}
+                                onDoubleClick={() => complete(task.id)}
                                 className={`text-left ${tone} disabled:cursor-not-allowed`}
                               >
-                                {t.title}
+                                {task.title}
                               </button>
                               {lastDone && (
                                 <div className="text-[10px] text-muted-foreground/80 mt-0.5">
