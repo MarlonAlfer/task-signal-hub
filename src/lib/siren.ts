@@ -1,7 +1,7 @@
 // Gentle siren tone + spoken alert.
 import { generateAlertVoice } from "./tts.functions";
 
-const MESSAGE = "Alerta de prazo!!!";
+const MESSAGE = "Alerte de prazo.";
 
 let cachedUrl: string | null = null;
 let loading: Promise<string | null> | null = null;
