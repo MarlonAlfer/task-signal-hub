@@ -16,24 +16,27 @@ import { WEEKDAY_LABELS, CATEGORY_LABELS } from "@/lib/task-utils";
 import { logAudit } from "@/lib/audit";
 import { deleteUserAccount } from "@/lib/admin-users.functions";
 import type { TaskRow } from "@/lib/types";
+import { useTranslation } from "react-i18next";
+import { currentLocale } from "@/i18n";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
 function AdminPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: roles = [], isLoading } = useRoles();
   const role = highestRole(roles);
 
-  if (isLoading) return <div className="p-8 text-muted-foreground">Carregando…</div>;
+  if (isLoading) return <div className="p-8 text-muted-foreground">{t("common.loading")}</div>;
   if (role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <h2 className="text-xl font-semibold">Acesso restrito</h2>
-          <p className="text-muted-foreground mt-2">Apenas administradores podem acessar esta área.</p>
-          <Button className="mt-4" onClick={() => navigate({ to: "/dashboard" })}>Voltar</Button>
+          <h2 className="text-xl font-semibold">{t("admin.accessRestricted")}</h2>
+          <p className="text-muted-foreground mt-2">{t("admin.accessRestrictedDesc")}</p>
+          <Button className="mt-4" onClick={() => navigate({ to: "/dashboard" })}>{t("common.back")}</Button>
         </div>
       </div>
     );
@@ -44,17 +47,17 @@ function AdminPage() {
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-3">
           <Button asChild variant="ghost" size="sm">
-            <Link to="/dashboard"><ArrowLeft className="h-4 w-4 mr-2" />Voltar</Link>
+            <Link to="/dashboard"><ArrowLeft className="h-4 w-4 mr-2" />{t("common.back")}</Link>
           </Button>
-          <h1 className="text-lg font-bold">Administração</h1>
+          <h1 className="text-lg font-bold">{t("admin.title")}</h1>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
         <Tabs defaultValue="tasks">
           <TabsList>
-            <TabsTrigger value="tasks">Tarefas</TabsTrigger>
-            <TabsTrigger value="users">Usuários & Papéis</TabsTrigger>
-            <TabsTrigger value="audit">Auditoria</TabsTrigger>
+            <TabsTrigger value="tasks">{t("admin.tabTasks")}</TabsTrigger>
+            <TabsTrigger value="users">{t("admin.tabUsers")}</TabsTrigger>
+            <TabsTrigger value="audit">{t("admin.tabAudit")}</TabsTrigger>
           </TabsList>
           <TabsContent value="tasks"><TasksAdmin /></TabsContent>
           <TabsContent value="users"><UsersAdmin /></TabsContent>
@@ -66,6 +69,7 @@ function AdminPage() {
 }
 
 function TasksAdmin() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Partial<TaskRow> | null>(null);
   const tasksQ = useQuery({
@@ -77,33 +81,33 @@ function TasksAdmin() {
     },
   });
 
-  async function save(t: Partial<TaskRow>) {
-    if (!t.title || !t.category) return toast.error("Preencha título e categoria.");
-    if (t.id) {
+  async function save(tk: Partial<TaskRow>) {
+    if (!tk.title || !tk.category) return toast.error(t("admin.fillTitleCategory"));
+    if (tk.id) {
       const { error } = await supabase.from("tasks").update({
-        title: t.title, category: t.category, weekday: t.weekday ?? null, group_label: t.group_label ?? null, position: t.position ?? 0, active: t.active ?? true,
-      }).eq("id", t.id);
+        title: tk.title, category: tk.category, weekday: tk.weekday ?? null, group_label: tk.group_label ?? null, position: tk.position ?? 0, active: tk.active ?? true,
+      }).eq("id", tk.id);
       if (error) return toast.error(error.message);
-      await logAudit("task_update", "tasks", t.id, { title: t.title });
+      await logAudit("task_update", "tasks", tk.id, { title: tk.title });
     } else {
       const { error, data } = await supabase.from("tasks").insert({
-        title: t.title, category: t.category, weekday: t.weekday ?? null, group_label: t.group_label ?? null, position: t.position ?? 0,
+        title: tk.title, category: tk.category, weekday: tk.weekday ?? null, group_label: tk.group_label ?? null, position: tk.position ?? 0,
       }).select().single();
       if (error) return toast.error(error.message);
-      await logAudit("task_create", "tasks", data?.id ?? null, { title: t.title });
+      await logAudit("task_create", "tasks", data?.id ?? null, { title: tk.title });
     }
-    toast.success("Tarefa salva.");
+    toast.success(t("admin.taskSaved"));
     setEditing(null);
     qc.invalidateQueries({ queryKey: ["admin-tasks"] });
     qc.invalidateQueries({ queryKey: ["tasks"] });
   }
 
   async function remove(id: string) {
-    if (!confirm("Excluir esta tarefa?")) return;
+    if (!confirm(t("admin.confirmDelete"))) return;
     const { error } = await supabase.from("tasks").delete().eq("id", id);
     if (error) return toast.error(error.message);
     await logAudit("task_delete", "tasks", id);
-    toast.success("Excluída.");
+    toast.success(t("admin.deleted"));
     qc.invalidateQueries({ queryKey: ["admin-tasks"] });
     qc.invalidateQueries({ queryKey: ["tasks"] });
   }
@@ -113,25 +117,25 @@ function TasksAdmin() {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">{tasks.length} tarefa(s) cadastrada(s)</p>
+        <p className="text-sm text-muted-foreground">{t("admin.countLabel", { count: tasks.length })}</p>
         <Button onClick={() => setEditing({ category: "diaria", position: 0 })}>
-          <Plus className="h-4 w-4 mr-2" />Nova tarefa
+          <Plus className="h-4 w-4 mr-2" />{t("admin.newTask")}
         </Button>
       </div>
 
       <div className="card-elevated rounded-lg divide-y divide-border">
-        {tasks.map((t) => (
-          <div key={t.id} className="p-3 flex items-start gap-3">
+        {tasks.map((task) => (
+          <div key={task.id} className="p-3 flex items-start gap-3">
             <div className="flex-1">
-              <div className="font-medium">{t.title}</div>
+              <div className="font-medium">{task.title}</div>
               <div className="text-xs text-muted-foreground">
-                {CATEGORY_LABELS[t.category]}
-                {t.weekday ? ` · ${WEEKDAY_LABELS[t.weekday]}` : ""}
-                {t.group_label ? ` · ${t.group_label}` : ""}
+                {CATEGORY_LABELS[task.category]}
+                {task.weekday ? ` · ${WEEKDAY_LABELS[task.weekday]}` : ""}
+                {task.group_label ? ` · ${task.group_label}` : ""}
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setEditing(t)}><Pencil className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4 text-status-red" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => setEditing(task)}><Pencil className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => remove(task.id)}><Trash2 className="h-4 w-4 text-status-red" /></Button>
           </div>
         ))}
       </div>
@@ -139,16 +143,16 @@ function TasksAdmin() {
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing?.id ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
+            <DialogTitle>{editing?.id ? t("admin.editTask") : t("admin.newTaskTitle")}</DialogTitle>
           </DialogHeader>
           {editing && (
             <div className="space-y-3">
               <div>
-                <Label>Título</Label>
+                <Label>{t("admin.fieldTitle")}</Label>
                 <Input value={editing.title ?? ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
               </div>
               <div>
-                <Label>Categoria</Label>
+                <Label>{t("admin.fieldCategory")}</Label>
                 <Select value={editing.category} onValueChange={(v) => setEditing({ ...editing, category: v as TaskRow["category"] })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -160,7 +164,7 @@ function TasksAdmin() {
               </div>
               {editing.category === "semanal" && (
                 <div>
-                  <Label>Dia da semana</Label>
+                  <Label>{t("admin.fieldWeekday")}</Label>
                   <Select value={String(editing.weekday ?? "1")} onValueChange={(v) => setEditing({ ...editing, weekday: Number(v) })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -170,18 +174,18 @@ function TasksAdmin() {
                 </div>
               )}
               <div>
-                <Label>Agrupamento (opcional)</Label>
-                <Input value={editing.group_label ?? ""} onChange={(e) => setEditing({ ...editing, group_label: e.target.value })} placeholder="Ex.: Piscinas, Jardim..." />
+                <Label>{t("admin.fieldGroup")}</Label>
+                <Input value={editing.group_label ?? ""} onChange={(e) => setEditing({ ...editing, group_label: e.target.value })} placeholder={t("admin.fieldGroupPh")} />
               </div>
               <div>
-                <Label>Ordem</Label>
+                <Label>{t("admin.fieldOrder")}</Label>
                 <Input type="number" value={editing.position ?? 0} onChange={(e) => setEditing({ ...editing, position: Number(e.target.value) })} />
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setEditing(null)}>Cancelar</Button>
-            <Button onClick={() => editing && save(editing)}>Salvar</Button>
+            <Button variant="ghost" onClick={() => setEditing(null)}>{t("common.cancel")}</Button>
+            <Button onClick={() => editing && save(editing)}>{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -190,6 +194,7 @@ function TasksAdmin() {
 }
 
 function UsersAdmin() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const deleteUserFn = useServerFn(deleteUserAccount);
   const [deleting, setDeleting] = useState<{ id: string; label: string } | null>(null);
@@ -218,7 +223,7 @@ function UsersAdmin() {
     const { error } = await supabase.from("user_roles").insert({ user_id, role });
     if (error) return toast.error(error.message);
     await logAudit("role_change", "user_roles", user_id, { role });
-    toast.success("Papel atualizado.");
+    toast.success(t("admin.roleUpdated"));
     qc.invalidateQueries({ queryKey: ["all-profiles-roles"] });
   }
 
@@ -227,11 +232,11 @@ function UsersAdmin() {
     setBusy(true);
     try {
       await deleteUserFn({ data: { userId: deleting.id } });
-      toast.success("Conta excluída.");
+      toast.success(t("admin.accountDeleted"));
       setDeleting(null);
       qc.invalidateQueries({ queryKey: ["all-profiles-roles"] });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro ao excluir conta.");
+      toast.error(e instanceof Error ? e.message : t("admin.deleteErr"));
     } finally {
       setBusy(false);
     }
@@ -242,7 +247,7 @@ function UsersAdmin() {
 
   return (
     <div className="mt-6 space-y-2">
-      <p className="text-sm text-muted-foreground">Defina o papel de cada usuário cadastrado. Como administrador, você pode excluir contas de outros usuários e visitantes.</p>
+      <p className="text-sm text-muted-foreground">{t("admin.usersDesc")}</p>
       <div className="card-elevated rounded-lg divide-y divide-border">
         {rows.map((u) => {
           const current: AppRole = u.roles.includes("admin") ? "admin" : u.roles.includes("user") ? "user" : u.roles.includes("visitor") ? "visitor" : "pending";
@@ -256,16 +261,16 @@ function UsersAdmin() {
               <Select value={current} onValueChange={(v) => setRole(u.id, v as AppRole)}>
                 <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="user">Usuário</SelectItem>
-                  <SelectItem value="visitor">Visitante</SelectItem>
-                  <SelectItem value="pending">Ainda não autorizado</SelectItem>
+                  <SelectItem value="admin">{t("roles.admin")}</SelectItem>
+                  <SelectItem value="user">{t("roles.user")}</SelectItem>
+                  <SelectItem value="visitor">{t("roles.visitor")}</SelectItem>
+                  <SelectItem value="pending">{t("roles.pending")}</SelectItem>
                 </SelectContent>
               </Select>
               <Button
                 variant="ghost"
                 size="icon"
-                title={isSelf ? "Você não pode excluir sua própria conta" : "Excluir conta"}
+                title={isSelf ? t("admin.cantDeleteSelf") : t("admin.deleteAccount")}
                 disabled={isSelf}
                 onClick={() => setDeleting({ id: u.id, label: u.display_name || u.email || u.id })}
               >
@@ -279,15 +284,15 @@ function UsersAdmin() {
       <Dialog open={!!deleting} onOpenChange={(o) => !o && !busy && setDeleting(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Excluir conta</DialogTitle>
+            <DialogTitle>{t("admin.deleteAccount")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Tem certeza que deseja excluir permanentemente a conta de <span className="font-medium text-foreground">{deleting?.label}</span>? Esta ação não pode ser desfeita.
+            {t("admin.deleteAccountConfirm", { label: deleting?.label ?? "" })}
           </p>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDeleting(null)} disabled={busy}>Cancelar</Button>
+            <Button variant="ghost" onClick={() => setDeleting(null)} disabled={busy}>{t("common.cancel")}</Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={busy}>
-              {busy ? "Excluindo…" : "Excluir"}
+              {busy ? t("admin.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -297,6 +302,7 @@ function UsersAdmin() {
 }
 
 function AuditView() {
+  const { t } = useTranslation();
   const q = useQuery({
     queryKey: ["audit"],
     queryFn: async () => {
@@ -309,14 +315,14 @@ function AuditView() {
 
   return (
     <div className="mt-6">
-      <p className="text-sm text-muted-foreground mb-2">Últimas 200 alterações (data, hora, usuário, ação).</p>
+      <p className="text-sm text-muted-foreground mb-2">{t("admin.auditDesc")}</p>
       <div className="card-elevated rounded-lg divide-y divide-border">
-        {rows.length === 0 && <div className="p-4 text-muted-foreground text-sm">Nenhuma alteração registrada.</div>}
+        {rows.length === 0 && <div className="p-4 text-muted-foreground text-sm">{t("admin.auditNone")}</div>}
         {rows.map((r) => (
           <div key={r.id as string} className="p-3 text-sm">
             <div className="flex justify-between gap-2">
               <span className="font-medium">{r.action}</span>
-              <span className="text-xs text-muted-foreground">{new Date(r.created_at as string).toLocaleString("pt-BR")}</span>
+              <span className="text-xs text-muted-foreground">{new Date(r.created_at as string).toLocaleString(currentLocale())}</span>
             </div>
             <div className="text-xs text-muted-foreground">
               {r.user_email ?? r.user_id} · {r.entity}{r.entity_id ? ` #${String(r.entity_id).slice(0,8)}` : ""}

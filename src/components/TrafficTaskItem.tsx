@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Check, Circle, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { CompletionStatus } from "@/lib/types";
 
 interface Props {
@@ -7,20 +8,21 @@ interface Props {
   title: string;
   group?: string | null;
   disabled?: boolean;
-  onCycle: () => void; // single click: pending<->in_progress
-  onComplete: () => void; // double click: mark done
+  onCycle: () => void;
+  onComplete: () => void;
 }
 
 export function TrafficTaskItem({ status, title, group, disabled, onCycle, onComplete }: Props) {
+  const { t } = useTranslation();
   const cls =
     status === "done" ? "traffic-green"
     : status === "in_progress" ? "traffic-yellow"
     : "traffic-red";
 
   const label =
-    status === "done" ? "Concluída"
-    : status === "in_progress" ? "Em andamento"
-    : "Pendente";
+    status === "done" ? t("status.done")
+    : status === "in_progress" ? t("status.inProgress")
+    : t("status.pending");
 
   return (
     <button

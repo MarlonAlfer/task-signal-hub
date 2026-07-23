@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { playAmbulanceSiren } from "@/lib/siren";
+import { useTranslation } from "react-i18next";
+import { currentLocale } from "@/i18n";
 
 type Deadline = {
   id: string;
@@ -25,6 +27,7 @@ function addDaysISO(iso: string, days: number) {
 }
 
 export function DeadlineAlerts() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const today = todayISO();
   const tomorrow = addDaysISO(today, 1);
@@ -87,12 +90,12 @@ export function DeadlineAlerts() {
               <AlertTriangle className="h-6 w-6 text-status-red shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-semibold text-sm leading-snug">
-                  Atenção ao prazo para "{d.title}"
+                  {t("deadlines.alertText", { title: d.title })}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {isToday ? "Entrega prevista para HOJE" : "Entrega prevista para AMANHÃ"}
+                  {isToday ? t("deadlines.dueToday") : t("deadlines.dueTomorrow")}
                   {" • "}
-                  {new Date(d.due_on + "T00:00:00").toLocaleDateString("pt-BR")}
+                  {new Date(d.due_on + "T00:00:00").toLocaleDateString(currentLocale())}
                 </p>
               </div>
               <Button
@@ -100,17 +103,17 @@ export function DeadlineAlerts() {
                 variant="ghost"
                 className="h-7 w-7 shrink-0"
                 onClick={() => acknowledge.mutate(d)}
-                title="Ciente"
+                title={t("common.acknowledge")}
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <div className="mt-3 flex gap-2">
               <Button size="sm" variant="secondary" onClick={() => acknowledge.mutate(d)}>
-                Estou ciente
+                {t("common.acknowledge")}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => playAmbulanceSiren(3)}>
-                Tocar novamente
+                {t("deadlines.playAgain")}
               </Button>
             </div>
           </div>

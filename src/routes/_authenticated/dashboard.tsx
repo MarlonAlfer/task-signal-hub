@@ -16,12 +16,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { GroupNote } from "@/components/GroupNote";
 import { playCompletionSound } from "@/lib/sound-effects";
+import { useTranslation } from "react-i18next";
+import { currentLocale } from "@/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
 function Dashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: roles = [] } = useRoles();
@@ -83,14 +87,14 @@ function Dashboard() {
 
   async function saveProfile() {
     const name = profileName.trim();
-    if (!name) return toast.error("Nome não pode ficar vazio.");
+    if (!name) return toast.error(t("dashboard.nameEmpty"));
     setSavingProfile(true);
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) { setSavingProfile(false); return; }
     const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", u.user.id);
     setSavingProfile(false);
     if (error) return toast.error(error.message);
-    toast.success("Nome atualizado.");
+    toast.success(t("dashboard.nameUpdated"));
     qc.invalidateQueries({ queryKey: ["profile"] });
     setProfileOpen(false);
   }
@@ -216,16 +220,16 @@ function Dashboard() {
     function handler(e: BeforeUnloadEvent) {
       if (pendingToday.length > 0) {
         e.preventDefault();
-        e.returnValue = `Você tem ${pendingToday.length} tarefa(s) pendente(s) hoje.`;
+        e.returnValue = t("dashboard.beforeUnload", { count: pendingToday.length });
       }
     }
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [pendingToday.length]);
+  }, [pendingToday.length, t]);
 
   async function setStatus(taskId: string, newStatus: CompletionStatus) {
     if (!canEdit) {
-      toast.error("Visitantes não podem editar tarefas.");
+      toast.error(t("dashboard.visitorCantEdit"));
       return;
     }
     const task = tasks.find((t) => t.id === taskId);
@@ -290,7 +294,7 @@ function Dashboard() {
   async function addExtra() {
     const title = extraTitle.trim();
     if (!title) return;
-    if (!canEdit) return toast.error("Visitantes não podem adicionar tarefas.");
+    if (!canEdit) return toast.error(t("dashboard.visitorCantAdd"));
     setAddingExtra(true);
     const { data: u } = await supabase.auth.getUser();
     const { data, error } = await supabase
@@ -306,7 +310,7 @@ function Dashboard() {
   }
 
   async function setExtraStatus(id: string, newStatus: CompletionStatus) {
-    if (!canEdit) return toast.error("Visitantes não podem editar tarefas.");
+    if (!canEdit) return toast.error(t("dashboard.visitorCantEdit"));
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase
       .from("extra_tasks")
@@ -329,8 +333,8 @@ function Dashboard() {
   }
 
   async function removeExtra(id: string) {
-    if (!canEdit) return toast.error("Visitantes não podem excluir tarefas.");
-    if (!confirm("Excluir esta tarefa extra?")) return;
+    if (!canEdit) return toast.error(t("dashboard.visitorCantDelete"));
+    if (!confirm(t("dashboard.confirmDeleteExtra"))) return;
     const { error } = await supabase.from("extra_tasks").delete().eq("id", id);
     if (error) return toast.error(error.message);
     await logAudit("extra_task_delete", "extra_tasks", id);
@@ -415,9 +419,14 @@ function Dashboard() {
       if (synth) {
         synth.cancel();
         const msg = new SpeechSynthesisUtterance(
-          `Atenção. Hoje é o primeiro dia útil do mês. Você tem ${count} tarefa${count === 1 ? "" : "s"} mensal${count === 1 ? "" : "is"} pendente${count === 1 ? "" : "s"}.`
+          t("dashboard.monthlyVoice", {
+            count,
+            s: count === 1 ? "" : "s",
+            is: count === 1 ? "" : "is",
+            s2: count === 1 ? "" : "s",
+          })
         );
-        msg.lang = "pt-BR";
+        msg.lang = currentLocale();
         msg.rate = 1;
         msg.pitch = 1;
         setTimeout(() => synth.speak(msg), 900);
@@ -465,10 +474,11 @@ function Dashboard() {
   function SectionStatus({ pending, total }: { pending: number; total: number }) {
     if (total === 0) return null;
     const allDone = pending === 0;
+    const label = allDone ? t("dashboard.allDone") : t("dashboard.pendingBadge", { count: pending });
     return (
       <span
-        aria-label={allDone ? "Tudo concluído" : `${pending} pendente(s)`}
-        title={allDone ? "Tudo concluído" : `${pending} pendente(s)`}
+        aria-label={label}
+        title={label}
         className={`inline-block h-2.5 w-2.5 rounded-full ${allDone ? "bg-status-green shadow-glow-green" : "bg-status-red shadow-glow-red animate-pulse"}`}
       />
     );
@@ -508,32 +518,33 @@ function Dashboard() {
             <div>
               <h1 className="text-lg font-bold leading-tight">Domus Liv</h1>
               <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <span>{wd === 0 ? "Domingo — sem tarefas programadas" : WEEKDAY_LABELS[wd]}</span>
-                <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">Hoje</span>
+                <span>{wd === 0 ? t("header.subtitleSunday") : WEEKDAY_LABELS[wd]}</span>
+                <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">{t("common.today")}</span>
               </p>
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitcher compact />
             <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="max-w-[160px] truncate">
               <UserCog className="h-4 w-4 mr-2 shrink-0" />
-              <span className="truncate">{profileQ.data?.display_name ?? "Perfil"}</span>
+              <span className="truncate">{profileQ.data?.display_name ?? t("common.profile")}</span>
             </Button>
             <Badge variant="outline" className="uppercase text-xs">
-              {role === "admin" ? "Administrador" : role === "user" ? "Usuário" : "Visitante"}
+              {role === "admin" ? t("roles.admin") : role === "user" ? t("roles.user") : t("roles.visitor")}
             </Badge>
-            <Button asChild variant="ghost" size="sm" title="Prazos" className="text-muted-foreground hover:text-foreground">
-              <Link to="/deadlines"><CalendarClock className="h-4 w-4 mr-2" />Prazos</Link>
+            <Button asChild variant="ghost" size="sm" title={t("header.deadlines")} className="text-muted-foreground hover:text-foreground">
+              <Link to="/deadlines"><CalendarClock className="h-4 w-4 mr-2" />{t("header.deadlines")}</Link>
             </Button>
-            <Button asChild variant="ghost" size="icon" title="Histórico" className="text-muted-foreground hover:text-foreground">
+            <Button asChild variant="ghost" size="icon" title={t("header.history")} className="text-muted-foreground hover:text-foreground">
               <Link to="/history"><History className="h-4 w-4" /></Link>
             </Button>
             {role === "admin" && (
               <Button asChild variant="secondary" size="sm">
-                <Link to="/admin"><Shield className="h-4 w-4 mr-2" />Admin</Link>
+                <Link to="/admin"><Shield className="h-4 w-4 mr-2" />{t("header.admin")}</Link>
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />Sair
+              <LogOut className="h-4 w-4 mr-2" />{t("common.signOut")}
             </Button>
           </div>
         </div>
@@ -548,14 +559,14 @@ function Dashboard() {
             aria-expanded={isOpen("stats")}
           >
             {isOpen("stats") ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Resumo do dia</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("dashboard.summary")}</h2>
           </button>
           {isOpen("stats") && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatCard label="Tarefas de hoje" value={stats.total} icon={<ClipboardList className="h-4 w-4" />} />
-              <StatCard label="Pendentes" value={stats.pending} tone="red" />
-              <StatCard label="Em andamento" value={stats.inProgress} tone="yellow" />
-              <StatCard label="Concluídas" value={stats.done} tone="green" />
+              <StatCard label={t("dashboard.todayTasks")} value={stats.total} icon={<ClipboardList className="h-4 w-4" />} />
+              <StatCard label={t("dashboard.pending")} value={stats.pending} tone="red" />
+              <StatCard label={t("dashboard.inProgress")} value={stats.inProgress} tone="yellow" />
+              <StatCard label={t("dashboard.done")} value={stats.done} tone="green" />
             </div>
           )}
         </section>
@@ -564,10 +575,11 @@ function Dashboard() {
         <section className="card-elevated rounded-xl p-4 flex flex-wrap items-center gap-3">
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
           <div className="flex-1 min-w-[200px]">
-            <h2 className="text-sm font-semibold">Ver / editar tarefas do dia</h2>
-            <p className="text-[11px] text-muted-foreground">
-              Selecione um dia para visualizar ou marcar tarefas. As alterações são registradas em <strong>hoje</strong>.
-            </p>
+            <h2 className="text-sm font-semibold">{t("dashboard.viewEditTitle")}</h2>
+            <p
+              className="text-[11px] text-muted-foreground"
+              dangerouslySetInnerHTML={{ __html: t("dashboard.viewEditHint") }}
+            />
           </div>
           <div className="min-w-[180px]">
             <Select value={String(viewWd)} onValueChange={(v) => setViewWd(Number(v))}>
@@ -577,7 +589,7 @@ function Dashboard() {
                   <SelectItem key={n} value={String(n)}>
                     <span className="flex items-center gap-2">
                       {WEEKDAY_LABELS[n]}
-                      {n === wd && <span className="rounded-full bg-status-green/20 text-status-green px-1.5 py-0.5 text-[9px] font-bold uppercase">Hoje</span>}
+                      {n === wd && <span className="rounded-full bg-status-green/20 text-status-green px-1.5 py-0.5 text-[9px] font-bold uppercase">{t("common.today")}</span>}
                     </span>
                   </SelectItem>
                 ))}
@@ -586,7 +598,7 @@ function Dashboard() {
           </div>
           {!isViewingToday && (
             <Button variant="ghost" size="sm" onClick={() => setViewWd(wd === 0 ? 1 : wd)}>
-              Voltar para hoje
+              {t("dashboard.backToToday")}
             </Button>
           )}
         </section>
@@ -604,12 +616,12 @@ function Dashboard() {
           >
             {isOpen("extras") ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
             <Sparkles className="h-4 w-4 text-status-yellow" />
-            <h2 className="text-lg font-semibold">Tarefas extras de hoje</h2>
+            <h2 className="text-lg font-semibold">{t("dashboard.extrasTitle")}</h2>
             <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
               <SectionStatus pending={pendingExtras.length} total={extras.length} />
               {pendingExtras.length > 0 && (
                 <span className="inline-flex items-center rounded-full bg-status-red/15 text-status-red px-2 py-0.5 font-semibold ring-1 ring-status-red/30">
-                  {pendingExtras.length} pendente{pendingExtras.length === 1 ? "" : "s"}
+                  {t("dashboard.pendingBadge", { count: pendingExtras.length })}
                 </span>
               )}
               <span>{extras.length}</span>
@@ -625,17 +637,17 @@ function Dashboard() {
                   <Input
                     value={extraTitle}
                     onChange={(e) => setExtraTitle(e.target.value)}
-                    placeholder="Adicionar tarefa extra… (inicia em andamento; dois cliques para concluir)"
+                    placeholder={t("dashboard.extraPlaceholder")}
                     maxLength={200}
                     disabled={addingExtra}
                   />
                   <Button type="submit" disabled={addingExtra || !extraTitle.trim()}>
-                    <Plus className="h-4 w-4 mr-1" /> Adicionar
+                    <Plus className="h-4 w-4 mr-1" /> {t("common.add")}
                   </Button>
                 </form>
               )}
               {extras.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhuma tarefa extra hoje.</p>
+                <p className="text-sm text-muted-foreground">{t("dashboard.extraNone")}</p>
               ) : (
                 <div className="space-y-2">
                   {extras.map((e) => {
@@ -645,7 +657,7 @@ function Dashboard() {
                         <div className="flex-1">
                           <TrafficTaskItem
                             title={e.title}
-                            group="Extra"
+                            group={t("dashboard.extraGroup")}
                             status={s}
                             disabled={!canEdit}
                             onCycle={() => cycleExtra(e.id, s)}
@@ -656,7 +668,7 @@ function Dashboard() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Excluir"
+                            title={t("common.delete")}
                             onClick={() => removeExtra(e.id)}
                             className="shrink-0 self-center text-muted-foreground hover:text-status-red"
                           >
@@ -668,9 +680,14 @@ function Dashboard() {
                   })}
                 </div>
               )}
-              <p className="text-[11px] text-muted-foreground">
-                Tarefa recém-criada entra como <span className="text-status-red font-semibold">pendente</span>. Dê <strong>dois cliques</strong> para marcar como concluída.
-              </p>
+              <p
+                className="text-[11px] text-muted-foreground"
+                dangerouslySetInnerHTML={{
+                  __html: t("dashboard.extraHint")
+                    .replace("<r>", '<span class="text-status-red font-semibold">')
+                    .replace("</r>", "</span>"),
+                }}
+              />
             </div>
           )}
         </section>
@@ -680,14 +697,14 @@ function Dashboard() {
 
         {viewWd === 0 && (
           <div className="card-elevated rounded-lg p-6 text-center">
-            <p className="text-muted-foreground">Domingo — nenhuma tarefa programada.</p>
+            <p className="text-muted-foreground">{t("dashboard.sundayNoTasks")}</p>
           </div>
         )}
 
         {Object.keys(highlightGrouped).length === 0 && viewWd !== 0 && !tasksQ.isLoading && (
 
           <div className="card-elevated rounded-lg p-6 text-center text-muted-foreground">
-            Nenhuma tarefa para hoje.
+            {t("dashboard.noTasksToday")}
           </div>
         )}
 
@@ -714,7 +731,7 @@ function Dashboard() {
                   {groupKey === CATEGORY_LABELS.semanal && (
                     <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1 flex items-center gap-2">
                       <span>{WEEKDAY_LABELS[viewWd]}</span>
-                      {isViewingToday && <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold ring-1 ring-status-green/30">Hoje</span>}
+                      {isViewingToday && <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold ring-1 ring-status-green/30">{t("common.today")}</span>}
                     </p>
                   )}
 
@@ -777,7 +794,7 @@ function Dashboard() {
               aria-expanded={isOpen("other")}
             >
               {isOpen("other") ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("dashboard.otherPeriodic")}</h2>
               <span className="ml-auto flex items-center gap-2">
                 <SectionStatus
                   pending={otherTasks.filter((t) => (getStatus(t)) !== "done").length}
@@ -808,26 +825,26 @@ function Dashboard() {
                   </button>
                   {isOpen(k) && (
                     <ul className="space-y-1 text-xs">
-                      {list.map((t) => {
-                        const s = getStatus(t);
+                      {list.map((task) => {
+                        const s = getStatus(task);
                         const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
-                        const lastDone = catKey === "mensal" ? monthlyLastDoneById.get(t.id) : undefined;
+                        const lastDone = catKey === "mensal" ? monthlyLastDoneById.get(task.id) : undefined;
                         return (
-                          <li key={t.id} className="flex items-start gap-2">
+                          <li key={task.id} className="flex items-start gap-2">
                             <span className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${s === "done" ? "bg-status-green" : s === "in_progress" ? "bg-status-yellow" : "bg-status-red"}`} />
                             <div className="flex-1 min-w-0">
                               <button
                                 type="button"
                                 disabled={!canEdit}
-                                onClick={() => cycle(t.id)}
-                                onDoubleClick={() => complete(t.id)}
+                                onClick={() => cycle(task.id)}
+                                onDoubleClick={() => complete(task.id)}
                                 className={`text-left ${tone} disabled:cursor-not-allowed`}
                               >
-                                {t.title}
+                                {task.title}
                               </button>
                               {lastDone && (
                                 <div className="text-[10px] text-muted-foreground/80 mt-0.5">
-                                  ✓ Concluída em {new Date(lastDone + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                  ✓ {t("dashboard.completedOn")} {new Date(lastDone + "T00:00:00").toLocaleDateString(currentLocale(), { day: "2-digit", month: "2-digit", year: "numeric" })}
                                 </div>
                               )}
                             </div>
@@ -854,9 +871,14 @@ function Dashboard() {
 
 
 
-        <p className="text-xs text-muted-foreground text-center pt-4">
-          Um clique alterna <span className="text-status-yellow">Em andamento</span>. Dois cliques marcam como <span className="text-status-green">Concluída</span>.
-        </p>
+        <p
+          className="text-xs text-muted-foreground text-center pt-4"
+          dangerouslySetInnerHTML={{
+            __html: t("dashboard.interactionHint")
+              .replace("<y>", '<span class="text-status-yellow">').replace("</y>", "</span>")
+              .replace("<g>", '<span class="text-status-green">').replace("</g>", "</span>"),
+          }}
+        />
       </main>
 
       {/* Floating monthly alert — first business day of the month */}
@@ -865,23 +887,23 @@ function Dashboard() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-status-red shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-semibold text-sm mb-1">Tarefas mensais pendentes</h3>
+              <h3 className="font-semibold text-sm mb-1">{t("dashboard.monthlyAlertTitle")}</h3>
               <p className="text-xs text-muted-foreground mb-3">
-                Hoje é o primeiro dia útil do mês. Existem tarefas mensais a realizar:
+                {t("dashboard.monthlyAlertDesc")}
               </p>
               <ul className="text-xs space-y-1 mb-3 max-h-32 overflow-auto">
                 {otherTasks
-                  .filter((t) => t.category === "mensal" && (getStatus(t)) !== "done")
+                  .filter((t2) => t2.category === "mensal" && (getStatus(t2)) !== "done")
                   .slice(0, 6)
-                  .map((t) => (
-                    <li key={t.id} className="text-muted-foreground">• {t.title}</li>
+                  .map((t2) => (
+                    <li key={t2.id} className="text-muted-foreground">• {t2.title}</li>
                   ))}
               </ul>
               <div className="flex gap-2">
-                <Button size="sm" variant="secondary" onClick={playMonthlyAlertSound} className="shrink-0" title="Ouvir alerta">
+                <Button size="sm" variant="secondary" onClick={playMonthlyAlertSound} className="shrink-0" title={t("dashboard.hearAlert")}>
                   <Volume2 className="h-4 w-4" />
                 </Button>
-                <Button size="sm" onClick={ackMonthAlert} className="flex-1">Estou ciente</Button>
+                <Button size="sm" onClick={ackMonthAlert} className="flex-1">{t("common.acknowledge")}</Button>
               </div>
             </div>
           </div>
@@ -893,21 +915,21 @@ function Dashboard() {
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" /> Editar perfil</DialogTitle>
-            <DialogDescription>Atualize o seu nome de exibição.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><UserCog className="h-5 w-5" /> {t("dashboard.editProfile")}</DialogTitle>
+            <DialogDescription>{t("dashboard.editProfileDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-muted-foreground">Nome de exibição</label>
-              <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Seu nome" maxLength={80} />
+              <label className="text-xs text-muted-foreground">{t("dashboard.displayName")}</label>
+              <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder={t("dashboard.yourName")} maxLength={80} />
             </div>
             {profileQ.data?.email && (
               <p className="text-xs text-muted-foreground">Email: {profileQ.data.email}</p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setProfileOpen(false)}>Cancelar</Button>
-            <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Salvando…" : "Salvar"}</Button>
+            <Button variant="ghost" onClick={() => setProfileOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? t("common.saving") : t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -916,20 +938,20 @@ function Dashboard() {
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-status-yellow" /> Tarefas de hoje</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-status-yellow" /> {t("dashboard.openingTitle")}</DialogTitle>
             <DialogDescription>
-              {wd === 0 ? "Hoje é domingo — sem tarefas programadas."
-                : `Você tem ${dueToday.length} tarefa(s) programada(s) para hoje (${WEEKDAY_LABELS[wd]}).`}
+              {wd === 0 ? t("dashboard.openingSunday")
+                : t("dashboard.openingBody", { count: dueToday.length, weekday: WEEKDAY_LABELS[wd] })}
             </DialogDescription>
           </DialogHeader>
           <ul className="max-h-64 overflow-auto space-y-1 text-sm">
-            {dueToday.slice(0, 12).map((t) => (
-              <li key={t.id} className="text-muted-foreground">• {t.title}</li>
+            {dueToday.slice(0, 12).map((t2) => (
+              <li key={t2.id} className="text-muted-foreground">• {t2.title}</li>
             ))}
-            {dueToday.length > 12 && <li className="text-xs">+ {dueToday.length - 12} outras…</li>}
+            {dueToday.length > 12 && <li className="text-xs">{t("dashboard.othersMore", { count: dueToday.length - 12 })}</li>}
           </ul>
           <DialogFooter>
-            <Button onClick={() => setOpenDialog(false)}>Entendi</Button>
+            <Button onClick={() => setOpenDialog(false)}>{t("common.understood")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -938,12 +960,12 @@ function Dashboard() {
       <Dialog open={openWeekly} onOpenChange={setOpenWeekly}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-status-red"><AlertTriangle className="h-5 w-5" /> Pendências da semana</DialogTitle>
-            <DialogDescription>Revisão de sexta-feira — verifique o que ficou em aberto nesta semana.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-status-red"><AlertTriangle className="h-5 w-5" /> {t("dashboard.fridayTitle")}</DialogTitle>
+            <DialogDescription>{t("dashboard.fridayDesc")}</DialogDescription>
           </DialogHeader>
           <FridayPendingList tasks={tasks} completions={weekPendingQ.data ?? []} />
           <DialogFooter>
-            <Button onClick={() => setOpenWeekly(false)}>Fechar</Button>
+            <Button onClick={() => setOpenWeekly(false)}>{t("common.close")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -964,6 +986,7 @@ function StatCard({ label, value, tone, icon }: { label: string; value: number; 
 }
 
 function FridayPendingList({ tasks, completions }: { tasks: TaskRow[]; completions: { task_id: string; completion_date: string; status: string }[] }) {
+  const { t } = useTranslation();
   const doneKeys = new Set(completions.filter(c => c.status === "done").map(c => `${c.task_id}|${c.completion_date}`));
   const start = new Date(startOfWeekISO());
   const days: string[] = [];
@@ -976,21 +999,21 @@ function FridayPendingList({ tasks, completions }: { tasks: TaskRow[]; completio
     const jsDay = new Date(day).getDay();
     const wd = jsDay === 0 ? 0 : jsDay;
     if (wd === 0) continue;
-    for (const t of tasks) {
-      const due = isTaskDueTodayForDate(t, wd);
+    for (const task of tasks) {
+      const due = isTaskDueTodayForDate(task, wd);
       if (!due) continue;
-      if (!doneKeys.has(`${t.id}|${day}`)) pending.push({ day, title: t.title });
+      if (!doneKeys.has(`${task.id}|${day}`)) pending.push({ day, title: task.title });
     }
   }
-  if (pending.length === 0) return <p className="text-sm text-status-green">Nenhuma pendência esta semana. Bom trabalho!</p>;
+  if (pending.length === 0) return <p className="text-sm text-status-green">{t("dashboard.noWeekPending")}</p>;
   return (
     <ul className="max-h-72 overflow-auto space-y-1 text-sm">
       {pending.slice(0, 40).map((p, i) => (
         <li key={i} className="text-muted-foreground">
-          <span className="text-status-red">●</span> {new Date(p.day).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })} — {p.title}
+          <span className="text-status-red">●</span> {new Date(p.day).toLocaleDateString(currentLocale(), { weekday: "short", day: "2-digit", month: "2-digit" })} — {p.title}
         </li>
       ))}
-      {pending.length > 40 && <li className="text-xs">+ {pending.length - 40} outras…</li>}
+      {pending.length > 40 && <li className="text-xs">{t("dashboard.othersMore", { count: pending.length - 40 })}</li>}
     </ul>
   );
 }

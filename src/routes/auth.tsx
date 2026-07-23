@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Activity } from "lucide-react";
 import { ensureBackgroundMusic, preloadBackgroundMusic } from "@/lib/bgm";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -16,6 +18,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -23,7 +26,6 @@ function AuthPage() {
   const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
-    // Pré-carrega o áudio para que o play() no submit inicie sem espera de rede
     preloadBackgroundMusic();
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate({ to: "/dashboard", replace: true });
@@ -32,13 +34,12 @@ function AuthPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
-    // Desbloqueia o autoplay usando o gesto atual do utilizador (submit)
     ensureBackgroundMusic();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Sessão iniciada");
+    toast.success(t("auth.signedIn"));
     navigate({ to: "/dashboard", replace: true });
   }
 
@@ -55,12 +56,17 @@ function AuthPage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Cadastro criado! Verifique seu email para confirmar.");
+    toast.success(t("auth.signUpSuccess"));
   }
+
+  const hint = t("auth.passwordHint");
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
+        <div className="mb-4 flex justify-end">
+          <LanguageSwitcher compact />
+        </div>
         <div className="mb-8 flex items-center gap-3 justify-center">
           <div className="grid grid-cols-1 gap-1">
             <span className="h-3 w-3 rounded-full bg-status-red shadow-glow-red" />
@@ -68,36 +74,36 @@ function AuthPage() {
             <span className="h-3 w-3 rounded-full bg-status-green shadow-glow-green" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Domus Liv</h1>
-            <p className="text-xs text-muted-foreground">Manutenção em ritmo constante</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t("auth.title")}</h1>
+            <p className="text-xs text-muted-foreground">{t("auth.tagline")}</p>
           </div>
         </div>
 
         <Card className="card-elevated">
           <CardHeader>
-            <CardTitle>Acesse sua conta</CardTitle>
-            <CardDescription>Entre ou cadastre-se com seu email</CardDescription>
+            <CardTitle>{t("auth.cardTitle")}</CardTitle>
+            <CardDescription>{t("auth.cardDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin">
               <TabsList className="grid grid-cols-2 mb-4 w-full">
-                <TabsTrigger value="signin">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Registrar</TabsTrigger>
+                <TabsTrigger value="signin">{t("auth.signIn")}</TabsTrigger>
+                <TabsTrigger value="signup">{t("auth.signUp")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="si-email">Email</Label>
+                    <Label htmlFor="si-email">{t("auth.email")}</Label>
                     <Input id="si-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="si-pass">Senha</Label>
+                    <Label htmlFor="si-pass">{t("auth.password")}</Label>
                     <Input id="si-pass" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                   </div>
                   <Button type="submit" disabled={loading} className="w-full">
                     <Activity className="mr-2 h-4 w-4" />
-                    {loading ? "Entrando..." : "Entrar"}
+                    {loading ? t("auth.signingIn") : t("auth.signIn")}
                   </Button>
                 </form>
               </TabsContent>
@@ -105,20 +111,23 @@ function AuthPage() {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="su-name">Nome</Label>
-                    <Input id="su-name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Seu nome" />
+                    <Label htmlFor="su-name">{t("auth.name")}</Label>
+                    <Input id="su-name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t("auth.yourName")} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="su-email">Email</Label>
+                    <Label htmlFor="su-email">{t("auth.email")}</Label>
                     <Input id="su-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="su-pass">Senha</Label>
+                    <Label htmlFor="su-pass">{t("auth.password")}</Label>
                     <Input id="su-pass" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
-                    <p className="text-xs text-muted-foreground">Mínimo 8 caracteres. Você começa como <strong>Visitante</strong> — um administrador poderá elevar seu papel.</p>
+                    <p
+                      className="text-xs text-muted-foreground"
+                      dangerouslySetInnerHTML={{ __html: hint }}
+                    />
                   </div>
                   <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? "Criando..." : "Criar conta"}
+                    {loading ? t("auth.creating") : t("auth.createAccount")}
                   </Button>
                 </form>
               </TabsContent>

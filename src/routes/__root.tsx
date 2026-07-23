@@ -14,17 +14,21 @@ import smarthomeBg from "@/assets/smarthome-bg.jpg";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "sonner";
+import "@/i18n";
+import i18n from "@/i18n";
+import { useTranslation } from "react-i18next";
 
 
 function NotFoundComponent() {
+  const { t } = useTranslation();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Página não encontrada.</p>
+        <p className="mt-2 text-sm text-muted-foreground">{t("notFound.title")}</p>
         <div className="mt-6">
           <Link to="/" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-            Ir para o início
+            {t("notFound.goHome")}
           </Link>
         </div>
       </div>
@@ -34,15 +38,16 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
+  const { t } = useTranslation();
   useEffect(() => { reportLovableError(error, { boundary: "root" }); }, [error]);
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold text-foreground">Algo deu errado</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Tente novamente ou volte ao início.</p>
+        <h1 className="text-xl font-semibold text-foreground">{t("errorPage.title")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("errorPage.body")}</p>
         <div className="mt-6 flex justify-center gap-2">
           <button onClick={() => { router.invalidate(); reset(); }} className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-            Tentar novamente
+            {t("errorPage.retry")}
           </button>
         </div>
       </div>
@@ -92,10 +97,23 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const { i18n: i18nInst } = useTranslation();
 
   useEffect(() => {
     document.body.style.setProperty("--bg-smarthome", `url(${smarthomeBg})`);
   }, []);
+
+  // Keep <html lang> in sync with the active language for accessibility / TTS.
+  useEffect(() => {
+    const apply = () => {
+      const lng = (i18n.language || "pt").slice(0, 2);
+      const map: Record<string, string> = { pt: "pt-PT", en: "en-US", es: "es-ES" };
+      if (typeof document !== "undefined") document.documentElement.lang = map[lng] ?? "pt-PT";
+    };
+    apply();
+    i18nInst.on("languageChanged", apply);
+    return () => { i18nInst.off("languageChanged", apply); };
+  }, [i18nInst]);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {

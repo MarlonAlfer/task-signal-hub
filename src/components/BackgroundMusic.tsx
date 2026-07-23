@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Music, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { MPB_TRACK_URL, ensureBackgroundMusic } from "@/lib/bgm";
+import { useTranslation } from "react-i18next";
 
 export { MPB_TRACK_URL };
 
@@ -9,6 +10,7 @@ const STORAGE_PLAYING = "domus-bgm-playing";
 const STORAGE_VOLUME = "domus-bgm-volume";
 
 export function BackgroundMusic() {
+  const { t } = useTranslation();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.35);
@@ -70,7 +72,7 @@ export function BackgroundMusic() {
     <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-border/50 bg-background/70 px-3 py-2 shadow-lg backdrop-blur-md">
       <button
         type="button"
-        aria-label={playing ? "Pausar música" : "Tocar música MPB"}
+        aria-label={playing ? t("bgm.pause") : t("bgm.play")}
         onClick={() => setPlaying((p) => !p)}
         className="flex h-8 w-8 items-center justify-center rounded-full text-foreground/80 hover:bg-accent hover:text-foreground transition"
       >
@@ -79,7 +81,7 @@ export function BackgroundMusic() {
 
       <button
         type="button"
-        aria-label="Ajustar volume"
+        aria-label={t("bgm.volume")}
         onClick={() => setExpanded((e) => !e)}
         className="flex h-8 w-8 items-center justify-center rounded-full text-foreground/70 hover:bg-accent hover:text-foreground transition"
       >
@@ -90,7 +92,7 @@ export function BackgroundMusic() {
         <div className="flex items-center gap-2 pl-1">
           <button
             type="button"
-            aria-label={volume === 0 ? "Ativar som" : "Silenciar"}
+            aria-label={volume === 0 ? t("bgm.unmute") : t("bgm.mute")}
             onClick={() => setVolume(volume === 0 ? 0.35 : 0)}
             className="flex h-7 w-7 items-center justify-center rounded-full text-foreground/70 hover:bg-accent"
           >
@@ -102,7 +104,7 @@ export function BackgroundMusic() {
             step={1}
             onValueChange={(v) => setVolume((v[0] ?? 0) / 100)}
             className="w-28"
-            aria-label="Volume da música de fundo"
+            aria-label={t("bgm.volume")}
           />
         </div>
       )}
