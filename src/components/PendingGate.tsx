@@ -2,9 +2,11 @@ import { useRoles } from "@/hooks/useRoles";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, LogOut } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 
 export function PendingGate({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const { data: roles = [], isLoading } = useRoles();
 
   if (isLoading) return <>{children}</>;
@@ -31,10 +33,8 @@ export function PendingGate({ children }: { children: ReactNode }) {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-status-yellow/15 text-status-yellow">
             <ShieldAlert className="h-7 w-7" />
           </div>
-          <h2 className="text-xl font-bold mb-2">Ainda não autorizado</h2>
-          <p className="text-sm text-muted-foreground mb-5">
-            Sua conta foi criada, mas ainda aguarda autorização de um administrador. Você receberá acesso assim que seu status for alterado.
-          </p>
+          <h2 className="text-xl font-bold mb-2">{t("pending.title")}</h2>
+          <p className="text-sm text-muted-foreground mb-5">{t("pending.body")}</p>
           <Button
             variant="outline"
             className="w-full"
@@ -44,7 +44,7 @@ export function PendingGate({ children }: { children: ReactNode }) {
             }}
           >
             <LogOut className="h-4 w-4 mr-2" />
-            Sair
+            {t("common.signOut")}
           </Button>
         </div>
       </div>
