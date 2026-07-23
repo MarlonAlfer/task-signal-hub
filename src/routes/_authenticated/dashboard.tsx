@@ -117,33 +117,61 @@ function Dashboard() {
   const dueToday = useMemo(() => tasks.filter((t) => isTaskDueToday(t)), [tasks]);
   const pendingToday = useMemo(() => dueToday.filter((t) => (statusById.get(t.id) ?? "pending") !== "done"), [dueToday, statusById]);
 
-  // Last "done" completion date for each monthly task
+  // Current month window (YYYY-MM-01 .. YYYY-MM-last)
+  const monthRange = useMemo(() => {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    return { start: iso(first), end: iso(last) };
+  }, []);
+
   const monthlyTaskIds = useMemo(
     () => tasks.filter((t) => t.category === "mensal").map((t) => t.id),
     [tasks]
   );
+  // All completions in the current month for monthly tasks — used to compute
+  // both the last "done" date and the effective status that persists all month.
   const monthlyDoneQ = useQuery({
-    queryKey: ["monthly-done", monthlyTaskIds.join(",")],
+    queryKey: ["monthly-done", monthRange.start, monthRange.end, monthlyTaskIds.join(",")],
     queryFn: async () => {
-      if (monthlyTaskIds.length === 0) return [] as { task_id: string; completion_date: string }[];
+      if (monthlyTaskIds.length === 0) return [] as { task_id: string; completion_date: string; status: CompletionStatus }[];
       const { data, error } = await supabase
         .from("task_completions")
         .select("task_id, completion_date, status")
         .in("task_id", monthlyTaskIds)
-        .eq("status", "done")
+        .gte("completion_date", monthRange.start)
+        .lte("completion_date", monthRange.end)
         .order("completion_date", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as { task_id: string; completion_date: string }[];
+      return (data ?? []) as { task_id: string; completion_date: string; status: CompletionStatus }[];
     },
     enabled: monthlyTaskIds.length > 0,
   });
   const monthlyLastDoneById = useMemo(() => {
     const map = new Map<string, string>();
     for (const c of monthlyDoneQ.data ?? []) {
-      if (!map.has(c.task_id)) map.set(c.task_id, c.completion_date);
+      if (c.status === "done" && !map.has(c.task_id)) map.set(c.task_id, c.completion_date);
     }
     return map;
   }, [monthlyDoneQ.data]);
+  // Effective status this month = status of the latest completion row in current month.
+  const monthlyStatusById = useMemo(() => {
+    const map = new Map<string, CompletionStatus>();
+    for (const c of monthlyDoneQ.data ?? []) {
+      if (!map.has(c.task_id)) map.set(c.task_id, c.status);
+    }
+    return map;
+  }, [monthlyDoneQ.data]);
+
+  // Resolve the status a task should show today.
+  // Monthly tasks persist their status across the current month.
+  const getStatus = (t: { id: string; category: string }): CompletionStatus => {
+    if (t.category === "mensal") {
+      return monthlyStatusById.get(t.id) ?? "pending";
+    }
+    return statusById.get(t.id) ?? "pending";
+  };
 
   // Open-of-day dialog (once per day per browser)
   const [openDialog, setOpenDialog] = useState(false);
