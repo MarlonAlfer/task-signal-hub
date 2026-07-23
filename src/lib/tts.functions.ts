@@ -2,16 +2,25 @@ import { createServerFn } from "@tanstack/react-start";
 
 // Generates a short spoken alert using Lovable AI (OpenAI TTS) and returns
 // base64-encoded MP3 so the client can cache and replay without re-billing.
+const INSTRUCTIONS: Record<string, string> = {
+  pt: "Fale em português de Portugal (europeu), como uma amiga conversando de perto. Tom feminino claro, leve e envolvente, com respiração natural e entonação calma. Nada robótica — humana e aconchegante.",
+  en: "Speak in natural American English as a warm friend nearby. Clear feminine tone, easy pace, natural breathing. Not robotic — human and cozy.",
+  es: "Habla en español neutro con voz femenina cálida y cercana, como una amiga. Tono claro, ritmo tranquilo, respiración natural. Nada robótica — humana y acogedora.",
+};
+
 export const generateAlertVoice = createServerFn({ method: "POST" })
-  .inputValidator((input: { text: string; voice?: string }) => {
+  .inputValidator((input: { text: string; voice?: string; lang?: string }) => {
     if (!input?.text || typeof input.text !== "string") {
-      throw new Error("text obrigatório");
+      throw new Error("text required");
     }
-    return { text: input.text, voice: input.voice || "sage" };
+    const lang = (input.lang || "pt").slice(0, 2);
+    return { text: input.text, voice: input.voice || "sage", lang };
   })
   .handler(async ({ data }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY ausente");
+    if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
+
+    const instructions = INSTRUCTIONS[data.lang] || INSTRUCTIONS.pt;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/audio/speech", {
       method: "POST",
@@ -24,14 +33,13 @@ export const generateAlertVoice = createServerFn({ method: "POST" })
         input: data.text,
         voice: data.voice,
         response_format: "mp3",
-        instructions:
-          "Fale em português de Portugal (europeu), como uma amiga conversando de perto. Tom feminino claro, leve e envolvente, com respiração natural entre as palavras e entonação calma. Pronuncia à portuguesa, com 'Bom dia' suave e natural. Dê a frase como um lembrete casual no dia a dia — sem ênfase exagerada, sem pressa, quase sussurrando. Nada robótica, nada metálica. Simplesmente humana e aconchegante.",
+        instructions,
       }),
     });
 
     if (!res.ok) {
       const err = await res.text().catch(() => "");
-      throw new Error(`TTS falhou: ${res.status} ${err}`);
+      throw new Error(`TTS failed: ${res.status} ${err}`);
     }
 
     const buf = await res.arrayBuffer();

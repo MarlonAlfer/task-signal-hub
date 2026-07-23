@@ -1,34 +1,37 @@
 // Gentle siren tone + spoken alert.
 import { generateAlertVoice } from "./tts.functions";
+import i18n from "@/i18n";
 
-const MESSAGE = "Alerta de prazo.";
+const cache = new Map<string, string>();
+const loading = new Map<string, Promise<string | null>>();
 
-let cachedUrl: string | null = null;
-let loading: Promise<string | null> | null = null;
-
-async function loadAudioUrl(): Promise<string | null> {
-  if (cachedUrl) return cachedUrl;
-  if (loading) return loading;
-  loading = (async () => {
+async function loadAudioUrl(lang: string, message: string): Promise<string | null> {
+  const key = `${lang}::${message}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+  const inFlight = loading.get(key);
+  if (inFlight) return inFlight;
+  const p = (async () => {
     try {
-      const res = await generateAlertVoice({ data: { text: MESSAGE } });
+      const res = await generateAlertVoice({ data: { text: message, lang } });
       const bin = atob(res.audio);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
       const blob = new Blob([bytes], { type: res.mime });
-      cachedUrl = URL.createObjectURL(blob);
-      return cachedUrl;
+      const url = URL.createObjectURL(blob);
+      cache.set(key, url);
+      return url;
     } catch (e) {
       console.error("TTS load failed, using speechSynthesis fallback", e);
       return null;
     } finally {
-      loading = null;
+      loading.delete(key);
     }
   })();
-  return loading;
+  loading.set(key, p);
+  return p;
 }
 
-// Soft two-tone siren using WebAudio: gentle sine sweep, low volume, ~1.6s.
 function playSoftSiren(): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined") return resolve();
@@ -41,23 +44,18 @@ function playSoftSiren(): Promise<void> {
       const ctx = new AC();
       const now = ctx.currentTime;
       const duration = 1.6;
-
       const osc = ctx.createOscillator();
       osc.type = "sine";
-      // Smooth sweep 520Hz -> 880Hz -> 520Hz -> 880Hz
       osc.frequency.setValueAtTime(520, now);
       osc.frequency.linearRampToValueAtTime(880, now + 0.4);
       osc.frequency.linearRampToValueAtTime(520, now + 0.8);
       osc.frequency.linearRampToValueAtTime(880, now + 1.2);
       osc.frequency.linearRampToValueAtTime(520, now + duration);
-
       const gain = ctx.createGain();
-      // Soft envelope, max ~0.18 to keep it gentle
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.exponentialRampToValueAtTime(0.18, now + 0.08);
       gain.gain.setValueAtTime(0.18, now + duration - 0.15);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
       osc.connect(gain).connect(ctx.destination);
       osc.start(now);
       osc.stop(now + duration + 0.05);
@@ -71,18 +69,18 @@ function playSoftSiren(): Promise<void> {
   });
 }
 
-function fallbackSpeak() {
+function fallbackSpeak(lang: string, message: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const synth = window.speechSynthesis;
   try {
     synth.cancel();
     const voices = synth.getVoices();
-    const ptPT = voices.filter((v) => /pt(-|_)?PT/i.test(v.lang));
-    const pt = voices.filter((v) => /pt/i.test(v.lang));
-    const voice = ptPT[0] || pt[0] || voices[0] || null;
-    const u = new SpeechSynthesisUtterance(MESSAGE);
-    u.lang = voice?.lang || "pt-PT";
-    if (voice) u.voice = voice;
+    const target =
+      lang === "en" ? /en/i : lang === "es" ? /es/i : /pt/i;
+    const match = voices.find((v) => target.test(v.lang)) || voices[0] || null;
+    const u = new SpeechSynthesisUtterance(message);
+    u.lang = match?.lang || (lang === "en" ? "en-US" : lang === "es" ? "es-ES" : "pt-PT");
+    if (match) u.voice = match;
     u.rate = 1;
     u.pitch = 1.1;
     u.volume = 1;
@@ -93,14 +91,16 @@ function fallbackSpeak() {
 }
 
 async function playSpokenMessage() {
-  const url = await loadAudioUrl();
+  const lang = (i18n.language || "pt").slice(0, 2);
+  const message = i18n.t("deadlines.voiceAlert");
+  const url = await loadAudioUrl(lang, message);
   if (!url) {
-    fallbackSpeak();
+    fallbackSpeak(lang, message);
     return;
   }
   const audio = new Audio(url);
   audio.volume = 1;
-  audio.play().catch(() => fallbackSpeak());
+  audio.play().catch(() => fallbackSpeak(lang, message));
 }
 
 export function playAmbulanceSiren(_repeats = 1) {
