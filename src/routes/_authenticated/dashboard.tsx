@@ -27,6 +27,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+function Dashboard() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
   const { data: roles = [] } = useRoles();
   const role = highestRole(roles);
   const canEdit = role === "admin" || role === "user";
@@ -86,14 +90,14 @@ function Dashboard() {
 
   async function saveProfile() {
     const name = profileName.trim();
-    if (!name) return toast.error("Nome não pode ficar vazio.");
+    if (!name) return toast.error(t("dashboard.nameEmpty"));
     setSavingProfile(true);
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) { setSavingProfile(false); return; }
     const { error } = await supabase.from("profiles").update({ display_name: name }).eq("id", u.user.id);
     setSavingProfile(false);
     if (error) return toast.error(error.message);
-    toast.success("Nome atualizado.");
+    toast.success(t("dashboard.nameUpdated"));
     qc.invalidateQueries({ queryKey: ["profile"] });
     setProfileOpen(false);
   }
@@ -219,16 +223,16 @@ function Dashboard() {
     function handler(e: BeforeUnloadEvent) {
       if (pendingToday.length > 0) {
         e.preventDefault();
-        e.returnValue = `Você tem ${pendingToday.length} tarefa(s) pendente(s) hoje.`;
+        e.returnValue = t("dashboard.beforeUnload", { count: pendingToday.length });
       }
     }
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [pendingToday.length]);
+  }, [pendingToday.length, t]);
 
   async function setStatus(taskId: string, newStatus: CompletionStatus) {
     if (!canEdit) {
-      toast.error("Visitantes não podem editar tarefas.");
+      toast.error(t("dashboard.visitorCantEdit"));
       return;
     }
     const task = tasks.find((t) => t.id === taskId);
@@ -293,7 +297,7 @@ function Dashboard() {
   async function addExtra() {
     const title = extraTitle.trim();
     if (!title) return;
-    if (!canEdit) return toast.error("Visitantes não podem adicionar tarefas.");
+    if (!canEdit) return toast.error(t("dashboard.visitorCantAdd"));
     setAddingExtra(true);
     const { data: u } = await supabase.auth.getUser();
     const { data, error } = await supabase
@@ -309,7 +313,7 @@ function Dashboard() {
   }
 
   async function setExtraStatus(id: string, newStatus: CompletionStatus) {
-    if (!canEdit) return toast.error("Visitantes não podem editar tarefas.");
+    if (!canEdit) return toast.error(t("dashboard.visitorCantEdit"));
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase
       .from("extra_tasks")
@@ -332,8 +336,8 @@ function Dashboard() {
   }
 
   async function removeExtra(id: string) {
-    if (!canEdit) return toast.error("Visitantes não podem excluir tarefas.");
-    if (!confirm("Excluir esta tarefa extra?")) return;
+    if (!canEdit) return toast.error(t("dashboard.visitorCantDelete"));
+    if (!confirm(t("dashboard.confirmDeleteExtra"))) return;
     const { error } = await supabase.from("extra_tasks").delete().eq("id", id);
     if (error) return toast.error(error.message);
     await logAudit("extra_task_delete", "extra_tasks", id);
@@ -418,9 +422,14 @@ function Dashboard() {
       if (synth) {
         synth.cancel();
         const msg = new SpeechSynthesisUtterance(
-          `Atenção. Hoje é o primeiro dia útil do mês. Você tem ${count} tarefa${count === 1 ? "" : "s"} mensal${count === 1 ? "" : "is"} pendente${count === 1 ? "" : "s"}.`
+          t("dashboard.monthlyVoice", {
+            count,
+            s: count === 1 ? "" : "s",
+            is: count === 1 ? "" : "is",
+            s2: count === 1 ? "" : "s",
+          })
         );
-        msg.lang = "pt-BR";
+        msg.lang = currentLocale();
         msg.rate = 1;
         msg.pitch = 1;
         setTimeout(() => synth.speak(msg), 900);
@@ -468,10 +477,11 @@ function Dashboard() {
   function SectionStatus({ pending, total }: { pending: number; total: number }) {
     if (total === 0) return null;
     const allDone = pending === 0;
+    const label = allDone ? t("dashboard.allDone") : t("dashboard.pendingBadge", { count: pending });
     return (
       <span
-        aria-label={allDone ? "Tudo concluído" : `${pending} pendente(s)`}
-        title={allDone ? "Tudo concluído" : `${pending} pendente(s)`}
+        aria-label={label}
+        title={label}
         className={`inline-block h-2.5 w-2.5 rounded-full ${allDone ? "bg-status-green shadow-glow-green" : "bg-status-red shadow-glow-red animate-pulse"}`}
       />
     );
@@ -511,32 +521,33 @@ function Dashboard() {
             <div>
               <h1 className="text-lg font-bold leading-tight">Domus Liv</h1>
               <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <span>{wd === 0 ? "Domingo — sem tarefas programadas" : WEEKDAY_LABELS[wd]}</span>
-                <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">Hoje</span>
+                <span>{wd === 0 ? t("header.subtitleSunday") : WEEKDAY_LABELS[wd]}</span>
+                <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">{t("common.today")}</span>
               </p>
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitcher compact />
             <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="max-w-[160px] truncate">
               <UserCog className="h-4 w-4 mr-2 shrink-0" />
-              <span className="truncate">{profileQ.data?.display_name ?? "Perfil"}</span>
+              <span className="truncate">{profileQ.data?.display_name ?? t("common.profile")}</span>
             </Button>
             <Badge variant="outline" className="uppercase text-xs">
-              {role === "admin" ? "Administrador" : role === "user" ? "Usuário" : "Visitante"}
+              {role === "admin" ? t("roles.admin") : role === "user" ? t("roles.user") : t("roles.visitor")}
             </Badge>
-            <Button asChild variant="ghost" size="sm" title="Prazos" className="text-muted-foreground hover:text-foreground">
-              <Link to="/deadlines"><CalendarClock className="h-4 w-4 mr-2" />Prazos</Link>
+            <Button asChild variant="ghost" size="sm" title={t("header.deadlines")} className="text-muted-foreground hover:text-foreground">
+              <Link to="/deadlines"><CalendarClock className="h-4 w-4 mr-2" />{t("header.deadlines")}</Link>
             </Button>
-            <Button asChild variant="ghost" size="icon" title="Histórico" className="text-muted-foreground hover:text-foreground">
+            <Button asChild variant="ghost" size="icon" title={t("header.history")} className="text-muted-foreground hover:text-foreground">
               <Link to="/history"><History className="h-4 w-4" /></Link>
             </Button>
             {role === "admin" && (
               <Button asChild variant="secondary" size="sm">
-                <Link to="/admin"><Shield className="h-4 w-4 mr-2" />Admin</Link>
+                <Link to="/admin"><Shield className="h-4 w-4 mr-2" />{t("header.admin")}</Link>
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />Sair
+              <LogOut className="h-4 w-4 mr-2" />{t("common.signOut")}
             </Button>
           </div>
         </div>
