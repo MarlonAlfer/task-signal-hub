@@ -25,9 +25,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-function Dashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const qc = useQueryClient();
