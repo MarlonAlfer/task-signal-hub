@@ -228,12 +228,32 @@ function Dashboard() {
       toast.error("Visitantes não podem editar tarefas.");
       return;
     }
-    const prev = statusById.get(taskId) ?? "pending";
-    // optimistic update handled by refetch
+    const task = tasks.find((t) => t.id === taskId);
+    const isMonthly = task?.category === "mensal";
+    const prev = isMonthly
+      ? (monthlyStatusById.get(taskId) ?? "pending")
+      : (statusById.get(taskId) ?? "pending");
+
     if (newStatus === "pending") {
-      const { error } = await supabase.from("task_completions").delete().eq("task_id", taskId).eq("completion_date", today);
+      // Monthly tasks: clear the whole current month so the toggle un-marks it
+      // across every day of the month, not just today.
+      const q = supabase.from("task_completions").delete().eq("task_id", taskId);
+      const { error } = isMonthly
+        ? await q.gte("completion_date", monthRange.start).lte("completion_date", monthRange.end)
+        : await q.eq("completion_date", today);
       if (error) return toast.error(error.message);
     } else {
+      if (isMonthly) {
+        // Remove any prior month rows for this task so only today's row remains
+        // as the source of truth for the current month.
+        await supabase
+          .from("task_completions")
+          .delete()
+          .eq("task_id", taskId)
+          .gte("completion_date", monthRange.start)
+          .lte("completion_date", monthRange.end)
+          .neq("completion_date", today);
+      }
       const { error } = await supabase.from("task_completions").upsert(
         { task_id: taskId, completion_date: today, status: newStatus, updated_by: (await supabase.auth.getUser()).data.user?.id, updated_at: new Date().toISOString() },
         { onConflict: "task_id,completion_date" }
@@ -243,10 +263,14 @@ function Dashboard() {
     await logAudit("task_status_change", "task_completions", taskId, { from: prev, to: newStatus, date: today });
     qc.invalidateQueries({ queryKey: ["completions", today] });
     qc.invalidateQueries({ queryKey: ["week-pending", startOfWeekISO()] });
+    qc.invalidateQueries({ queryKey: ["monthly-done"] });
   }
 
   function cycle(taskId: string) {
-    const s = statusById.get(taskId) ?? "pending";
+    const task = tasks.find((t) => t.id === taskId);
+    const s = task?.category === "mensal"
+      ? (monthlyStatusById.get(taskId) ?? "pending")
+      : (statusById.get(taskId) ?? "pending");
     if (s === "pending") setStatus(taskId, "in_progress");
     else if (s === "in_progress") setStatus(taskId, "pending");
     else setStatus(taskId, "pending");
