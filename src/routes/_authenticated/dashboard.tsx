@@ -115,7 +115,6 @@ function Dashboard() {
 
   const tasks = tasksQ.data ?? [];
   const dueToday = useMemo(() => tasks.filter((t) => isTaskDueToday(t)), [tasks]);
-  const pendingToday = useMemo(() => dueToday.filter((t) => (statusById.get(t.id) ?? "pending") !== "done"), [dueToday, statusById]);
 
   // Current month window (YYYY-MM-01 .. YYYY-MM-last)
   const monthRange = useMemo(() => {
