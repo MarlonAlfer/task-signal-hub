@@ -172,6 +172,12 @@ function Dashboard() {
     return statusById.get(t.id) ?? "pending";
   };
 
+  const pendingToday = useMemo(
+    () => dueToday.filter((t) => getStatus(t) !== "done"),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dueToday, statusById, monthlyStatusById]
+  );
+
   // Open-of-day dialog (once per day per browser)
   const [openDialog, setOpenDialog] = useState(false);
   useEffect(() => {
