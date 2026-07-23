@@ -25,7 +25,7 @@ export const generateAlertVoice = createServerFn({ method: "POST" })
         voice: data.voice,
         response_format: "mp3",
         instructions:
-          "Fale em português do Brasil com uma voz feminina clara, firme e amigável, tom de alerta atencioso mas acolhedor. Pronuncie com energia moderada, natural e humana, com leve urgência — como um aviso importante dado com carinho. Nada robótica.",
+          "Fale como uma amiga conversando de perto, num português do Brasil natural e fluido. Tom feminino claro, leve e envolvente, com respiração natural entre as palavras e entonação calma. Dê a frase como um lembrete casual no dia a dia — sem ênfase exagerada, sem pressa, quase sussurrando. Nada robótica, nada metálica. Simplesmente humana e aconchegante.",
       }),
     });
 
