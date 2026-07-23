@@ -169,7 +169,7 @@ function Dashboard() {
     if (t.category === "mensal") {
       return monthlyStatusById.get(t.id) ?? "pending";
     }
-    return statusById.get(t.id) ?? "pending";
+    return getStatus(t);
   };
 
   const pendingToday = useMemo(
@@ -373,7 +373,7 @@ function Dashboard() {
   // Monthly floating alert — first business day of the month, until acknowledged
   const [monthAlertOpen, setMonthAlertOpen] = useState(false);
   const pendingMensalList = useMemo(
-    () => otherTasks.filter((t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done"),
+    () => otherTasks.filter((t) => t.category === "mensal" && (getStatus(t)) !== "done"),
     [otherTasks, statusById]
   );
   useEffect(() => {
@@ -450,9 +450,9 @@ function Dashboard() {
 
   const stats = {
     total: dueToday.length,
-    done: dueToday.filter((t) => statusById.get(t.id) === "done").length,
-    inProgress: dueToday.filter((t) => statusById.get(t.id) === "in_progress").length,
-    pending: dueToday.filter((t) => (statusById.get(t.id) ?? "pending") === "pending").length,
+    done: dueToday.filter((t) => getStatus(t) === "done").length,
+    inProgress: dueToday.filter((t) => getStatus(t) === "in_progress").length,
+    pending: dueToday.filter((t) => (getStatus(t)) === "pending").length,
   };
   const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
 
@@ -699,7 +699,7 @@ function Dashboard() {
             return acc;
           }, {});
           const sectionKey = `hl:${groupKey}`;
-          const pendCount = list.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
+          const pendCount = list.filter((t) => (getStatus(t)) !== "done").length;
           return (
             <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
               <button
@@ -728,7 +728,7 @@ function Dashboard() {
                 <div className="space-y-4">
                   {Object.entries(bySub).map(([sub, tasksSub]) => {
                     const subKey = `${sectionKey}:${sub}`;
-                    const subPend = tasksSub.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
+                    const subPend = tasksSub.filter((t) => (getStatus(t)) !== "done").length;
                     return (
                       <div key={sub}>
                         {sub !== "Geral" && (
@@ -750,7 +750,7 @@ function Dashboard() {
                                 key={t.id}
                                 title={t.title}
                                 group={null}
-                                status={statusById.get(t.id) ?? "pending"}
+                                status={getStatus(t)}
                                 disabled={!canEdit}
                                 onCycle={() => cycle(t.id)}
                                 onComplete={() => complete(t.id)}
@@ -780,7 +780,7 @@ function Dashboard() {
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Outras tarefas periódicas</h2>
               <span className="ml-auto flex items-center gap-2">
                 <SectionStatus
-                  pending={otherTasks.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length}
+                  pending={otherTasks.filter((t) => (getStatus(t)) !== "done").length}
                   total={otherTasks.length}
                 />
               </span>
@@ -790,7 +790,7 @@ function Dashboard() {
               {Object.entries(otherGrouped).map(([groupKey, list]) => {
                 const k = `other:${groupKey}`;
                 const catKey = (Object.entries(CATEGORY_LABELS).find(([, v]) => v === groupKey)?.[0]) ?? "";
-                const pendCount = list.filter((t) => (statusById.get(t.id) ?? "pending") !== "done").length;
+                const pendCount = list.filter((t) => (getStatus(t)) !== "done").length;
                 return (
                 <div key={groupKey} className="rounded-lg border border-border p-3">
                   <button
@@ -809,7 +809,7 @@ function Dashboard() {
                   {isOpen(k) && (
                     <ul className="space-y-1 text-xs">
                       {list.map((t) => {
-                        const s = statusById.get(t.id) ?? "pending";
+                        const s = getStatus(t);
                         const tone = s === "done" ? "text-status-green line-through" : s === "in_progress" ? "text-status-yellow" : "text-muted-foreground";
                         const lastDone = catKey === "mensal" ? monthlyLastDoneById.get(t.id) : undefined;
                         return (
@@ -871,7 +871,7 @@ function Dashboard() {
               </p>
               <ul className="text-xs space-y-1 mb-3 max-h-32 overflow-auto">
                 {otherTasks
-                  .filter((t) => t.category === "mensal" && (statusById.get(t.id) ?? "pending") !== "done")
+                  .filter((t) => t.category === "mensal" && (getStatus(t)) !== "done")
                   .slice(0, 6)
                   .map((t) => (
                     <li key={t.id} className="text-muted-foreground">• {t.title}</li>
