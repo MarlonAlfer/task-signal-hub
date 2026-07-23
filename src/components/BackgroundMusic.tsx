@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Music, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { MPB_TRACK_URL, ensureBackgroundMusic } from "@/lib/bgm";
+import { useTranslation } from "react-i18next";
 
 export { MPB_TRACK_URL };
 
