@@ -1,14 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, History as HistoryIcon, CheckCircle2, Circle, Clock, Search, StickyNote } from "lucide-react";
+import { ArrowLeft, History as HistoryIcon, CheckCircle2, Circle, Clock, Search, StickyNote, Lock } from "lucide-react";
 import { CATEGORY_LABELS, WEEKDAY_LABELS } from "@/lib/task-utils";
-import type { TaskRow } from "@/lib/types";
+import type { CompletionStatus, TaskRow } from "@/lib/types";
 import { useTranslation } from "react-i18next";
 import { currentLocale } from "@/i18n";
+import { useRoles, highestRole } from "@/hooks/useRoles";
+import { logAudit } from "@/lib/audit";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/history")({
   component: HistoryPage,
@@ -22,9 +25,18 @@ type StatusFilter = "all" | "done" | "in_progress" | "pending";
 
 function HistoryPage() {
   const { t } = useTranslation();
+  const qc = useQueryClient();
+  const { data: roles = [] } = useRoles();
+  const isAdmin = highestRole(roles) === "admin";
   const [date, setDate] = useState<string>(todayISO());
   const [q, setQ] = useState<string>("");
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const isClosedDay = date < todayISO();
+  const role = highestRole(roles);
+  // Closed (past) days may only be re-marked by an administrator.
+  const canEditDay = isClosedDay ? isAdmin : role === "admin" || role === "user";
+
+
 
   const tasksQ = useQuery({
     queryKey: ["tasks", "all-history"],
@@ -112,6 +124,38 @@ function HistoryPage() {
     weekday: "long", day: "2-digit", month: "long", year: "numeric",
   });
 
+  async function setStatus(taskId: string, newStatus: CompletionStatus) {
+    if (!canEditDay) {
+      toast.error(t("history.adminOnlyClosed"));
+      return;
+    }
+    const prev = (statusById.get(taskId) ?? "pending") as CompletionStatus;
+    if (newStatus === "pending") {
+      const { error } = await supabase
+        .from("task_completions")
+        .delete()
+        .eq("task_id", taskId)
+        .eq("completion_date", date);
+      if (error) return toast.error(error.message);
+    } else {
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from("task_completions").upsert(
+        { task_id: taskId, completion_date: date, status: newStatus, updated_by: u.user?.id, updated_at: new Date().toISOString() },
+        { onConflict: "task_id,completion_date" },
+      );
+      if (error) return toast.error(error.message);
+    }
+    await logAudit("task_status_change", "task_completions", taskId, { from: prev, to: newStatus, date });
+    qc.invalidateQueries({ queryKey: ["completions", date] });
+  }
+
+  function cycleStatus(taskId: string) {
+    const s = (statusById.get(taskId) ?? "pending") as CompletionStatus;
+    setStatus(taskId, s === "pending" ? "in_progress" : s === "in_progress" ? "done" : "pending");
+  }
+
+
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
@@ -159,9 +203,16 @@ function HistoryPage() {
                 <FilterStat label={t("history.notDone")} value={stats.pending} tone="red" active={filter === "pending"} onClick={() => setFilter("pending")} />
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">{t("history.filterHint")}</p>
+              <p className="text-[11px] mt-1 flex items-center gap-1.5 text-muted-foreground">
+                <Lock className="h-3 w-3" />
+                {canEditDay
+                  ? (isClosedDay ? t("history.adminEditHint") : t("history.editHint"))
+                  : t("history.adminOnlyClosed")}
+              </p>
             </>
           )}
         </section>
+
 
         {Object.keys(grouped).length === 0 && wd !== 0 && (
           <div className="card-elevated rounded-xl p-6 text-center text-muted-foreground text-sm">
@@ -193,12 +244,21 @@ function HistoryPage() {
                   const label = s === "done" ? t("status.done") : s === "in_progress" ? t("status.inProgress") : t("status.notDone");
                   const tone = s === "done" ? "text-status-green" : s === "in_progress" ? "text-status-yellow" : "text-status-red";
                   return (
-                    <li key={task.id} className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2">
-                      {icon}
-                      <span className="text-sm flex-1">{task.title}</span>
-                      <span className={`text-xs font-medium uppercase tracking-wider ${tone}`}>{label}</span>
+                    <li key={task.id}>
+                      <button
+                        type="button"
+                        disabled={!canEditDay}
+                        onClick={() => cycleStatus(task.id)}
+                        onDoubleClick={() => setStatus(task.id, "done")}
+                        className="w-full flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2 text-left transition disabled:cursor-not-allowed enabled:hover:border-border enabled:hover:bg-background/40"
+                      >
+                        {icon}
+                        <span className="text-sm flex-1">{task.title}</span>
+                        <span className={`text-xs font-medium uppercase tracking-wider ${tone}`}>{label}</span>
+                      </button>
                     </li>
                   );
+
                 })}
               </ul>
               {note && note.trim() && (
