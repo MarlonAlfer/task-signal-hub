@@ -124,6 +124,38 @@ function HistoryPage() {
     weekday: "long", day: "2-digit", month: "long", year: "numeric",
   });
 
+  async function setStatus(taskId: string, newStatus: CompletionStatus) {
+    if (!canEditDay) {
+      toast.error(t("history.adminOnlyClosed"));
+      return;
+    }
+    const prev = (statusById.get(taskId) ?? "pending") as CompletionStatus;
+    if (newStatus === "pending") {
+      const { error } = await supabase
+        .from("task_completions")
+        .delete()
+        .eq("task_id", taskId)
+        .eq("completion_date", date);
+      if (error) return toast.error(error.message);
+    } else {
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase.from("task_completions").upsert(
+        { task_id: taskId, completion_date: date, status: newStatus, updated_by: u.user?.id, updated_at: new Date().toISOString() },
+        { onConflict: "task_id,completion_date" },
+      );
+      if (error) return toast.error(error.message);
+    }
+    await logAudit("task_status_change", "task_completions", taskId, { from: prev, to: newStatus, date });
+    qc.invalidateQueries({ queryKey: ["completions", date] });
+  }
+
+  function cycleStatus(taskId: string) {
+    const s = (statusById.get(taskId) ?? "pending") as CompletionStatus;
+    setStatus(taskId, s === "pending" ? "in_progress" : s === "in_progress" ? "done" : "pending");
+  }
+
+
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
