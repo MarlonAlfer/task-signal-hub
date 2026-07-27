@@ -32,7 +32,10 @@ function HistoryPage() {
   const [q, setQ] = useState<string>("");
   const [filter, setFilter] = useState<StatusFilter>("all");
   const isClosedDay = date < todayISO();
-  const canEditDay = !isClosedDay || isAdmin;
+  const role = highestRole(roles);
+  // Closed (past) days may only be re-marked by an administrator.
+  const canEditDay = isClosedDay ? isAdmin : role === "admin" || role === "user";
+
 
 
   const tasksQ = useQuery({
