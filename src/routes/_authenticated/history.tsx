@@ -203,9 +203,16 @@ function HistoryPage() {
                 <FilterStat label={t("history.notDone")} value={stats.pending} tone="red" active={filter === "pending"} onClick={() => setFilter("pending")} />
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">{t("history.filterHint")}</p>
+              <p className="text-[11px] mt-1 flex items-center gap-1.5 text-muted-foreground">
+                <Lock className="h-3 w-3" />
+                {canEditDay
+                  ? (isClosedDay ? t("history.adminEditHint") : t("history.editHint"))
+                  : t("history.adminOnlyClosed")}
+              </p>
             </>
           )}
         </section>
+
 
         {Object.keys(grouped).length === 0 && wd !== 0 && (
           <div className="card-elevated rounded-xl p-6 text-center text-muted-foreground text-sm">
