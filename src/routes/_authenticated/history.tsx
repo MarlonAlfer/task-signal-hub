@@ -237,12 +237,21 @@ function HistoryPage() {
                   const label = s === "done" ? t("status.done") : s === "in_progress" ? t("status.inProgress") : t("status.notDone");
                   const tone = s === "done" ? "text-status-green" : s === "in_progress" ? "text-status-yellow" : "text-status-red";
                   return (
-                    <li key={task.id} className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2">
-                      {icon}
-                      <span className="text-sm flex-1">{task.title}</span>
-                      <span className={`text-xs font-medium uppercase tracking-wider ${tone}`}>{label}</span>
+                    <li key={task.id}>
+                      <button
+                        type="button"
+                        disabled={!canEditDay}
+                        onClick={() => cycleStatus(task.id)}
+                        onDoubleClick={() => setStatus(task.id, "done")}
+                        className="w-full flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2 text-left transition disabled:cursor-not-allowed enabled:hover:border-border enabled:hover:bg-background/40"
+                      >
+                        {icon}
+                        <span className="text-sm flex-1">{task.title}</span>
+                        <span className={`text-xs font-medium uppercase tracking-wider ${tone}`}>{label}</span>
+                      </button>
                     </li>
                   );
+
                 })}
               </ul>
               {note && note.trim() && (
