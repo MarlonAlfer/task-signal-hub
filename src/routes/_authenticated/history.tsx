@@ -1,14 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, History as HistoryIcon, CheckCircle2, Circle, Clock, Search, StickyNote } from "lucide-react";
+import { ArrowLeft, History as HistoryIcon, CheckCircle2, Circle, Clock, Search, StickyNote, Lock } from "lucide-react";
 import { CATEGORY_LABELS, WEEKDAY_LABELS } from "@/lib/task-utils";
-import type { TaskRow } from "@/lib/types";
+import type { CompletionStatus, TaskRow } from "@/lib/types";
 import { useTranslation } from "react-i18next";
 import { currentLocale } from "@/i18n";
+import { useRoles, highestRole } from "@/hooks/useRoles";
+import { logAudit } from "@/lib/audit";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/history")({
   component: HistoryPage,
@@ -22,9 +25,15 @@ type StatusFilter = "all" | "done" | "in_progress" | "pending";
 
 function HistoryPage() {
   const { t } = useTranslation();
+  const qc = useQueryClient();
+  const { data: roles = [] } = useRoles();
+  const isAdmin = highestRole(roles) === "admin";
   const [date, setDate] = useState<string>(todayISO());
   const [q, setQ] = useState<string>("");
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const isClosedDay = date < todayISO();
+  const canEditDay = !isClosedDay || isAdmin;
+
 
   const tasksQ = useQuery({
     queryKey: ["tasks", "all-history"],
