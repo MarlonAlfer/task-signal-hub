@@ -488,7 +488,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen relative">
       {/* Floating progress ring — 30% opacity, corner widget */}
-      <div aria-hidden className="pointer-events-none fixed bottom-4 left-4 z-40 opacity-30">
+      <div aria-hidden className="pointer-events-none fixed bottom-2 left-2 z-40 opacity-30 origin-bottom-left scale-[0.55] sm:bottom-4 sm:left-4 sm:scale-100">
         <div className="relative rounded-full bg-background/40 backdrop-blur-sm shadow-lg">
           <svg width="140" height="140" viewBox="0 0 200 200">
             <circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground" />
@@ -507,53 +507,56 @@ function Dashboard() {
       </div>
       <div className="relative z-[1]">
 
-      <div className="fixed top-3 right-3 z-50">
-        <LanguageSwitcher />
-      </div>
-
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
-        <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="grid grid-cols-1 gap-1">
+        <div className="mx-auto max-w-6xl px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:items-center">
+            <div className="grid grid-cols-1 gap-1 shrink-0">
               <span className="h-2.5 w-2.5 rounded-full bg-status-red" />
               <span className="h-2.5 w-2.5 rounded-full bg-status-yellow" />
               <span className="h-2.5 w-2.5 rounded-full bg-status-green" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold leading-tight">Domus Liv</h1>
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <span>{wd === 0 ? t("header.subtitleSunday") : WEEKDAY_LABELS[wd]}</span>
-                <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">{t("common.today")}</span>
+            <div className="min-w-0">
+              <h1 className="truncate text-base sm:text-lg font-bold leading-tight">Domus Liv</h1>
+              <p className="text-xs text-muted-foreground flex items-center gap-2 min-w-0">
+                <span className="truncate">{wd === 0 ? t("header.subtitleSunday") : WEEKDAY_LABELS[wd]}</span>
+                <span className="shrink-0 inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">{t("common.today")}</span>
               </p>
             </div>
+            <div className="shrink-0 sm:hidden">
+              <LanguageSwitcher compact />
+            </div>
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="max-w-[160px] truncate">
+          <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:ml-auto sm:gap-2 sm:pb-0 lg:overflow-visible">
+            <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="shrink-0 max-w-[140px] truncate">
               <UserCog className="h-4 w-4 mr-2 shrink-0" />
               <span className="truncate">{profileQ.data?.display_name ?? t("common.profile")}</span>
             </Button>
-            <Badge variant="outline" className="uppercase text-xs">
+            <Badge variant="outline" className="shrink-0 uppercase text-xs">
               {role === "admin" ? t("roles.admin") : role === "user" ? t("roles.user") : t("roles.visitor")}
             </Badge>
-            <Button asChild variant="ghost" size="sm" title={t("header.deadlines")} className="text-muted-foreground hover:text-foreground">
-              <Link to="/deadlines"><CalendarClock className="h-4 w-4 mr-2" />{t("header.deadlines")}</Link>
+            <Button asChild variant="ghost" size="sm" title={t("header.deadlines")} className="shrink-0 text-muted-foreground hover:text-foreground">
+              <Link to="/deadlines"><CalendarClock className="h-4 w-4 lg:mr-2" /><span className="hidden lg:inline">{t("header.deadlines")}</span></Link>
             </Button>
-            <Button asChild variant="ghost" size="icon" title={t("header.history")} className="text-muted-foreground hover:text-foreground">
+            <Button asChild variant="ghost" size="icon" title={t("header.history")} className="shrink-0 text-muted-foreground hover:text-foreground">
               <Link to="/history"><History className="h-4 w-4" /></Link>
             </Button>
             {role === "admin" && (
-              <Button asChild variant="secondary" size="sm">
-                <Link to="/admin"><Shield className="h-4 w-4 mr-2" />{t("header.admin")}</Link>
+              <Button asChild variant="secondary" size="sm" className="shrink-0">
+                <Link to="/admin"><Shield className="h-4 w-4 lg:mr-2" /><span className="hidden lg:inline">{t("header.admin")}</span></Link>
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />{t("common.signOut")}
+            <Button variant="ghost" size="sm" onClick={signOut} className="shrink-0">
+              <LogOut className="h-4 w-4 lg:mr-2" /><span className="hidden lg:inline">{t("common.signOut")}</span>
             </Button>
+            <div className="hidden shrink-0 sm:block">
+              <LanguageSwitcher compact />
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
+
+      <main className="mx-auto max-w-6xl px-3 sm:px-4 py-5 sm:py-6 space-y-5 sm:space-y-6">
         <section>
           <button
             type="button"
@@ -577,14 +580,14 @@ function Dashboard() {
         {/* Seletor de dia da semana — visualizar / editar tarefas de outro dia */}
         <section className="card-elevated rounded-xl p-4 flex flex-wrap items-center gap-3">
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-0 sm:min-w-[200px]">
             <h2 className="text-sm font-semibold">{t("dashboard.viewEditTitle")}</h2>
             <p
               className="text-[11px] text-muted-foreground"
               dangerouslySetInnerHTML={{ __html: t("dashboard.viewEditHint") }}
             />
           </div>
-          <div className="min-w-[180px]">
+          <div className="w-full sm:w-auto sm:min-w-[180px]">
             <Select value={String(viewWd)} onValueChange={(v) => setViewWd(Number(v))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -610,7 +613,7 @@ function Dashboard() {
 
 
         {/* Tarefas extras do dia */}
-        <section className="card-elevated rounded-xl p-5 border-l-4 border-status-red">
+        <section className="card-elevated rounded-xl p-4 sm:p-5 border-l-4 border-status-red">
           <button
             type="button"
             onClick={() => toggle("extras")}
@@ -619,8 +622,8 @@ function Dashboard() {
           >
             {isOpen("extras") ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
             <Sparkles className="h-4 w-4 text-status-yellow" />
-            <h2 className="text-lg font-semibold">{t("dashboard.extrasTitle")}</h2>
-            <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+            <h2 className="min-w-0 truncate text-base sm:text-lg font-semibold">{t("dashboard.extrasTitle")}</h2>
+            <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
               <SectionStatus pending={pendingExtras.length} total={extras.length} />
               {pendingExtras.length > 0 && (
                 <span className="inline-flex items-center rounded-full bg-status-red/15 text-status-red px-2 py-0.5 font-semibold ring-1 ring-status-red/30">
@@ -635,7 +638,7 @@ function Dashboard() {
               {canEdit && (
                 <form
                   onSubmit={(e) => { e.preventDefault(); addExtra(); }}
-                  className="flex gap-2"
+                  className="flex flex-col gap-2 sm:flex-row"
                 >
                   <Input
                     value={extraTitle}
@@ -644,7 +647,7 @@ function Dashboard() {
                     maxLength={200}
                     disabled={addingExtra}
                   />
-                  <Button type="submit" disabled={addingExtra || !extraTitle.trim()}>
+                  <Button type="submit" disabled={addingExtra || !extraTitle.trim()} className="shrink-0">
                     <Plus className="h-4 w-4 mr-1" /> {t("common.add")}
                   </Button>
                 </form>
@@ -721,7 +724,7 @@ function Dashboard() {
           const sectionKey = `hl:${groupKey}`;
           const pendCount = list.filter((t) => (getStatus(t)) !== "done").length;
           return (
-            <section key={groupKey} className="card-elevated rounded-xl p-5 border-l-4 border-status-yellow">
+            <section key={groupKey} className="card-elevated rounded-xl p-4 sm:p-5 border-l-4 border-status-yellow">
               <button
                 type="button"
                 onClick={() => toggle(sectionKey)}
@@ -729,8 +732,8 @@ function Dashboard() {
                 aria-expanded={isOpen(sectionKey)}
               >
                 {isOpen(sectionKey) ? <ChevronDown className="h-5 w-5 mt-1 shrink-0" /> : <ChevronRight className="h-5 w-5 mt-1 shrink-0" />}
-                <div>
-                  <h2 className="text-lg font-semibold leading-tight">{groupKey}</h2>
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-lg font-semibold leading-tight break-words">{groupKey}</h2>
                   {groupKey === CATEGORY_LABELS.semanal && (
                     <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1 flex items-center gap-2">
                       <span>{WEEKDAY_LABELS[viewWd]}</span>
@@ -739,7 +742,7 @@ function Dashboard() {
                   )}
 
                 </div>
-                <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
                   <SectionStatus pending={pendCount} total={list.length} />
                   <span>{list.length}</span>
                 </span>
@@ -797,8 +800,8 @@ function Dashboard() {
               aria-expanded={isOpen("other")}
             >
               {isOpen("other") ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("dashboard.otherPeriodic")}</h2>
-              <span className="ml-auto flex items-center gap-2">
+              <h2 className="min-w-0 truncate text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t("dashboard.otherPeriodic")}</h2>
+              <span className="ml-auto flex shrink-0 items-center gap-2">
                 <SectionStatus
                   pending={otherTasks.filter((t) => (getStatus(t)) !== "done").length}
                   total={otherTasks.length}
@@ -806,7 +809,7 @@ function Dashboard() {
               </span>
             </button>
             {isOpen("other") && (
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
               {Object.entries(otherGrouped).map(([groupKey, list]) => {
                 const k = `other:${groupKey}`;
                 const catKey = (Object.entries(CATEGORY_LABELS).find(([, v]) => v === groupKey)?.[0]) ?? "";
@@ -820,7 +823,7 @@ function Dashboard() {
                     aria-expanded={isOpen(k)}
                   >
                     {isOpen(k) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                    <h3 className="text-xs font-semibold">{groupKey}</h3>
+                    <h3 className="min-w-0 truncate text-xs font-semibold">{groupKey}</h3>
                     <span className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
                       <SectionStatus pending={pendCount} total={list.length} />
                       <span>{list.length}</span>
@@ -886,7 +889,7 @@ function Dashboard() {
 
       {/* Floating monthly alert — first business day of the month */}
       {monthAlertOpen && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-sm card-elevated rounded-xl border-l-4 border-status-red p-4 shadow-2xl animate-in slide-in-from-bottom-4">
+        <div className="fixed bottom-3 right-3 left-3 sm:left-auto sm:bottom-4 sm:right-4 z-50 sm:max-w-sm card-elevated rounded-xl border-l-4 border-status-red p-4 shadow-2xl animate-in slide-in-from-bottom-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-status-red shrink-0 mt-0.5" />
             <div className="flex-1">

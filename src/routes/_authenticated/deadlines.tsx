@@ -131,18 +131,18 @@ function DeadlinesPage() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
-        <div className="mx-auto max-w-4xl px-4 py-4 flex items-center gap-3">
+        <div className="mx-auto max-w-4xl px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
           <Button asChild variant="ghost" size="sm">
             <Link to="/dashboard"><ArrowLeft className="h-4 w-4 mr-2" />{t("common.back")}</Link>
           </Button>
-          <div className="flex items-center gap-2">
-            <CalendarClock className="h-5 w-5 text-status-yellow" />
-            <h1 className="text-lg font-bold">{t("deadlines.title")}</h1>
+          <div className="flex min-w-0 items-center gap-2">
+            <CalendarClock className="h-5 w-5 shrink-0 text-status-yellow" />
+            <h1 className="truncate text-base sm:text-lg font-bold">{t("deadlines.title")}</h1>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-6 space-y-6">
+      <main className="mx-auto max-w-4xl px-3 sm:px-4 py-5 sm:py-6 space-y-5 sm:space-y-6">
         {canEdit && (
           <section className="rounded-xl border border-border/60 bg-background/60 backdrop-blur p-4">
             <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -192,7 +192,7 @@ function DeadlinesPage() {
               const overdue = remaining < 0;
               const soon = remaining >= 0 && remaining <= 1;
               return (
-                <div key={d.id} className="rounded-lg border border-border/60 bg-background/60 backdrop-blur p-3 flex items-start gap-3">
+                <div key={d.id} className="rounded-lg border border-border/60 bg-background/60 backdrop-blur p-3 flex flex-wrap items-start gap-3">
                   <div className="mt-0.5">
                     {overdue ? <AlertTriangle className="h-5 w-5 text-status-red" />
                       : soon ? <AlertTriangle className="h-5 w-5 text-status-yellow" />
@@ -235,7 +235,7 @@ function DeadlinesPage() {
             </h2>
             <div className="space-y-2">
               {done.map((d) => (
-                <div key={d.id} className="rounded-lg border border-border/40 bg-background/40 backdrop-blur p-3 flex items-start gap-3 opacity-70">
+                <div key={d.id} className="rounded-lg border border-border/40 bg-background/40 backdrop-blur p-3 flex flex-wrap items-start gap-3 opacity-70">
                   <CheckCircle2 className="h-5 w-5 text-status-green mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium line-through">{d.title}</p>

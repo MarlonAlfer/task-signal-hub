@@ -76,7 +76,7 @@ export function DeadlineAlerts() {
   if (pending.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-3 max-w-sm">
+    <div className="fixed bottom-20 left-3 right-3 z-50 flex flex-col gap-3 sm:bottom-20 sm:left-auto sm:right-4 sm:max-w-sm">
       {pending.map((d) => {
         const isToday = d.due_on === today;
         return (

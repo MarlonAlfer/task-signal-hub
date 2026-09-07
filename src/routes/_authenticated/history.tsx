@@ -159,22 +159,22 @@ function HistoryPage() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
-        <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-3 flex-wrap">
+        <div className="mx-auto max-w-6xl px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-3 flex-wrap">
           <Button asChild variant="ghost" size="sm">
             <Link to="/dashboard"><ArrowLeft className="h-4 w-4 mr-2" />{t("common.back")}</Link>
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <HistoryIcon className="h-4 w-4 text-muted-foreground" />
-            <h1 className="text-base font-semibold">{t("history.title")}</h1>
+            <h1 className="truncate text-base font-semibold">{t("history.title")}</h1>
           </div>
-          <div className="ml-auto flex items-center gap-2 flex-wrap">
-            <div className="relative">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+            <div className="relative min-w-0 flex-1 sm:flex-none">
               <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={t("history.searchPlaceholder")}
-                className="pl-8 w-[220px]"
+                className="pl-8 w-full sm:w-[220px]"
               />
             </div>
             <label className="text-xs text-muted-foreground">{t("history.date")}</label>
@@ -183,13 +183,13 @@ function HistoryPage() {
               value={date}
               max={todayISO()}
               onChange={(e) => setDate(e.target.value)}
-              className="w-[170px]"
+              className="w-[150px] sm:w-[170px]"
             />
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
+      <main className="mx-auto max-w-6xl px-3 sm:px-4 py-5 sm:py-6 space-y-5 sm:space-y-6">
         <section className="card-elevated rounded-xl p-4">
           <p className="text-sm text-muted-foreground capitalize">{dateLabel}</p>
           {wd === 0 ? (
