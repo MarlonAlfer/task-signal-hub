@@ -507,51 +507,54 @@ function Dashboard() {
       </div>
       <div className="relative z-[1]">
 
-      <div className="fixed top-3 right-3 z-50">
-        <LanguageSwitcher />
-      </div>
-
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
-        <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="grid grid-cols-1 gap-1">
+        <div className="mx-auto max-w-6xl px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:items-center">
+            <div className="grid grid-cols-1 gap-1 shrink-0">
               <span className="h-2.5 w-2.5 rounded-full bg-status-red" />
               <span className="h-2.5 w-2.5 rounded-full bg-status-yellow" />
               <span className="h-2.5 w-2.5 rounded-full bg-status-green" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold leading-tight">Domus Liv</h1>
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <span>{wd === 0 ? t("header.subtitleSunday") : WEEKDAY_LABELS[wd]}</span>
-                <span className="inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">{t("common.today")}</span>
+            <div className="min-w-0">
+              <h1 className="truncate text-base sm:text-lg font-bold leading-tight">Domus Liv</h1>
+              <p className="text-xs text-muted-foreground flex items-center gap-2 min-w-0">
+                <span className="truncate">{wd === 0 ? t("header.subtitleSunday") : WEEKDAY_LABELS[wd]}</span>
+                <span className="shrink-0 inline-flex items-center rounded-full bg-status-green/15 text-status-green px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-status-green/30">{t("common.today")}</span>
               </p>
             </div>
+            <div className="shrink-0 sm:hidden">
+              <LanguageSwitcher compact />
+            </div>
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="max-w-[160px] truncate">
+          <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:ml-auto sm:gap-2 sm:overflow-visible sm:pb-0">
+            <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="shrink-0 max-w-[140px] truncate">
               <UserCog className="h-4 w-4 mr-2 shrink-0" />
               <span className="truncate">{profileQ.data?.display_name ?? t("common.profile")}</span>
             </Button>
-            <Badge variant="outline" className="uppercase text-xs">
+            <Badge variant="outline" className="shrink-0 uppercase text-xs">
               {role === "admin" ? t("roles.admin") : role === "user" ? t("roles.user") : t("roles.visitor")}
             </Badge>
-            <Button asChild variant="ghost" size="sm" title={t("header.deadlines")} className="text-muted-foreground hover:text-foreground">
-              <Link to="/deadlines"><CalendarClock className="h-4 w-4 mr-2" />{t("header.deadlines")}</Link>
+            <Button asChild variant="ghost" size="sm" title={t("header.deadlines")} className="shrink-0 text-muted-foreground hover:text-foreground">
+              <Link to="/deadlines"><CalendarClock className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">{t("header.deadlines")}</span></Link>
             </Button>
-            <Button asChild variant="ghost" size="icon" title={t("header.history")} className="text-muted-foreground hover:text-foreground">
+            <Button asChild variant="ghost" size="icon" title={t("header.history")} className="shrink-0 text-muted-foreground hover:text-foreground">
               <Link to="/history"><History className="h-4 w-4" /></Link>
             </Button>
             {role === "admin" && (
-              <Button asChild variant="secondary" size="sm">
-                <Link to="/admin"><Shield className="h-4 w-4 mr-2" />{t("header.admin")}</Link>
+              <Button asChild variant="secondary" size="sm" className="shrink-0">
+                <Link to="/admin"><Shield className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">{t("header.admin")}</span></Link>
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-2" />{t("common.signOut")}
+            <Button variant="ghost" size="sm" onClick={signOut} className="shrink-0">
+              <LogOut className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">{t("common.signOut")}</span>
             </Button>
+            <div className="hidden shrink-0 sm:block">
+              <LanguageSwitcher compact />
+            </div>
           </div>
         </div>
       </header>
+
 
       <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
         <section>
