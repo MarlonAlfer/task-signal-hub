@@ -45,16 +45,16 @@ function AdminPage() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-border sticky top-0 backdrop-blur bg-background/70 z-10">
-        <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-3">
+        <div className="mx-auto max-w-6xl px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
           <Button asChild variant="ghost" size="sm">
             <Link to="/dashboard"><ArrowLeft className="h-4 w-4 mr-2" />{t("common.back")}</Link>
           </Button>
-          <h1 className="text-lg font-bold">{t("admin.title")}</h1>
+          <h1 className="truncate text-base sm:text-lg font-bold">{t("admin.title")}</h1>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6">
+      <main className="mx-auto max-w-6xl px-3 sm:px-4 py-5 sm:py-6">
         <Tabs defaultValue="tasks">
-          <TabsList>
+          <TabsList className="w-full grid grid-cols-3 sm:inline-flex sm:w-auto">
             <TabsTrigger value="tasks">{t("admin.tabTasks")}</TabsTrigger>
             <TabsTrigger value="users">{t("admin.tabUsers")}</TabsTrigger>
             <TabsTrigger value="audit">{t("admin.tabAudit")}</TabsTrigger>
@@ -125,9 +125,9 @@ function TasksAdmin() {
 
       <div className="card-elevated rounded-lg divide-y divide-border">
         {tasks.map((task) => (
-          <div key={task.id} className="p-3 flex items-start gap-3">
-            <div className="flex-1">
-              <div className="font-medium">{task.title}</div>
+          <div key={task.id} className="p-3 flex items-start gap-2 sm:gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="font-medium break-words">{task.title}</div>
               <div className="text-xs text-muted-foreground">
                 {CATEGORY_LABELS[task.category]}
                 {task.weekday ? ` · ${WEEKDAY_LABELS[task.weekday]}` : ""}
@@ -253,13 +253,13 @@ function UsersAdmin() {
           const current: AppRole = u.roles.includes("admin") ? "admin" : u.roles.includes("user") ? "user" : u.roles.includes("visitor") ? "visitor" : "pending";
           const isSelf = u.id === meId;
           return (
-            <div key={u.id} className="p-3 flex items-center gap-3">
-              <div className="flex-1">
-                <div className="font-medium">{u.display_name || u.email}</div>
-                <div className="text-xs text-muted-foreground">{u.email}</div>
+            <div key={u.id} className="p-3 flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+                <div className="font-medium break-words">{u.display_name || u.email}</div>
+                <div className="truncate text-xs text-muted-foreground">{u.email}</div>
               </div>
               <Select value={current} onValueChange={(v) => setRole(u.id, v as AppRole)}>
-                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-36 sm:w-40"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">{t("roles.admin")}</SelectItem>
                   <SelectItem value="user">{t("roles.user")}</SelectItem>
