@@ -526,7 +526,7 @@ function Dashboard() {
               <LanguageSwitcher compact />
             </div>
           </div>
-          <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:ml-auto sm:gap-2 sm:overflow-visible sm:pb-0">
+          <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 sm:mx-0 sm:ml-auto sm:gap-2 sm:pb-0 lg:overflow-visible">
             <Button variant="ghost" size="sm" onClick={() => setProfileOpen(true)} className="shrink-0 max-w-[140px] truncate">
               <UserCog className="h-4 w-4 mr-2 shrink-0" />
               <span className="truncate">{profileQ.data?.display_name ?? t("common.profile")}</span>
@@ -535,18 +535,18 @@ function Dashboard() {
               {role === "admin" ? t("roles.admin") : role === "user" ? t("roles.user") : t("roles.visitor")}
             </Badge>
             <Button asChild variant="ghost" size="sm" title={t("header.deadlines")} className="shrink-0 text-muted-foreground hover:text-foreground">
-              <Link to="/deadlines"><CalendarClock className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">{t("header.deadlines")}</span></Link>
+              <Link to="/deadlines"><CalendarClock className="h-4 w-4 lg:mr-2" /><span className="hidden lg:inline">{t("header.deadlines")}</span></Link>
             </Button>
             <Button asChild variant="ghost" size="icon" title={t("header.history")} className="shrink-0 text-muted-foreground hover:text-foreground">
               <Link to="/history"><History className="h-4 w-4" /></Link>
             </Button>
             {role === "admin" && (
               <Button asChild variant="secondary" size="sm" className="shrink-0">
-                <Link to="/admin"><Shield className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">{t("header.admin")}</span></Link>
+                <Link to="/admin"><Shield className="h-4 w-4 lg:mr-2" /><span className="hidden lg:inline">{t("header.admin")}</span></Link>
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={signOut} className="shrink-0">
-              <LogOut className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">{t("common.signOut")}</span>
+              <LogOut className="h-4 w-4 lg:mr-2" /><span className="hidden lg:inline">{t("common.signOut")}</span>
             </Button>
             <div className="hidden shrink-0 sm:block">
               <LanguageSwitcher compact />
