@@ -488,7 +488,7 @@ function Dashboard() {
   return (
     <div className="min-h-screen relative">
       {/* Floating progress ring — 30% opacity, corner widget */}
-      <div aria-hidden className="pointer-events-none fixed bottom-4 left-4 z-40 opacity-30">
+      <div aria-hidden className="pointer-events-none fixed bottom-2 left-2 z-40 opacity-30 origin-bottom-left scale-[0.55] sm:bottom-4 sm:left-4 sm:scale-100">
         <div className="relative rounded-full bg-background/40 backdrop-blur-sm shadow-lg">
           <svg width="140" height="140" viewBox="0 0 200 200">
             <circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground" />
