@@ -219,6 +219,9 @@ export const en: Dict = {
     signedIn: "Signed in",
     signUpSuccess: "Account created! Check your email to confirm.",
     passwordHint: "Minimum 8 characters. You start as a <b>Visitor</b> — an admin can upgrade your role.",
+    keepSignedIn: "Keep my login saved? (email and password remembered on this device)",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
   },
   pending: {
     title: "Not yet authorized",
