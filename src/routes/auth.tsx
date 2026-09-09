@@ -114,8 +114,27 @@ function AuthPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="si-pass">{t("auth.password")}</Label>
-                    <Input id="si-pass" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <div className="relative">
+                      <Input id="si-pass" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} className="pr-10" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
+                  <label className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                    />
+                    <span>{t("auth.keepSignedIn")}</span>
+                  </label>
                   <Button type="submit" disabled={loading} className="w-full">
                     <Activity className="mr-2 h-4 w-4" />
                     {loading ? t("auth.signingIn") : t("auth.signIn")}
@@ -135,7 +154,17 @@ function AuthPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="su-pass">{t("auth.password")}</Label>
-                    <Input id="su-pass" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <div className="relative">
+                      <Input id="su-pass" type={showPassword ? "text" : "password"} required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="pr-10" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                     <p
                       className="text-xs text-muted-foreground"
                       dangerouslySetInnerHTML={{ __html: hint }}
