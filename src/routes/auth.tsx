@@ -11,10 +11,6 @@ import { Activity, Eye, EyeOff } from "lucide-react";
 
 const REMEMBER_KEY = "domusliv-remember";
 const SESSION_KEY = "domusliv-session-active";
-
-export function markSessionActive() {
-  try { sessionStorage.setItem(SESSION_KEY, "1"); } catch { /* noop */ }
-}
 import { ensureBackgroundMusic, preloadBackgroundMusic } from "@/lib/bgm";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
