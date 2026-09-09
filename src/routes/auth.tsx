@@ -48,7 +48,7 @@ function AuthPage() {
     if (error) return toast.error(error.message);
     try {
       localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
-      markSessionActive();
+      sessionStorage.setItem(SESSION_KEY, "1");
     } catch { /* noop */ }
     toast.success(t("auth.signedIn"));
     navigate({ to: "/dashboard", replace: true });
