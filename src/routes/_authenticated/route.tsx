@@ -21,6 +21,22 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+    // "Keep login saved" off → forget the session once the browser session ends.
+    try {
+      if (
+        localStorage.getItem("domusliv-remember") === "0" &&
+        !sessionStorage.getItem("domusliv-session-active")
+      ) {
+        await supabase.auth.signOut();
+        throw redirect({ to: "/auth" });
+      }
+      sessionStorage.setItem("domusliv-session-active", "1");
+    } catch (e) {
+      if (e instanceof Error && "to" in e === false) {
+        // storage unavailable — continue without the remember check
+      }
+      if (typeof e === "object" && e !== null && "to" in e) throw e;
+    }
     return { user: data.user };
   },
   component: AuthenticatedLayout,

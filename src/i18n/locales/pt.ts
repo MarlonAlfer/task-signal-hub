@@ -217,6 +217,9 @@ export const pt = {
     signedIn: "Sessão iniciada",
     signUpSuccess: "Cadastro criado! Verifique seu email para confirmar.",
     passwordHint: "Mínimo 8 caracteres. Você começa como <b>Visitante</b> — um administrador poderá elevar seu papel.",
+    keepSignedIn: "Quer manter os dados salvos? (email e senha ficam lembrados neste dispositivo)",
+    showPassword: "Mostrar senha",
+    hidePassword: "Ocultar senha",
   },
   pending: {
     title: "Ainda não autorizado",

@@ -7,7 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Activity } from "lucide-react";
+import { Activity, Eye, EyeOff } from "lucide-react";
+
+const REMEMBER_KEY = "domusliv-remember";
+const SESSION_KEY = "domusliv-session-active";
 import { ensureBackgroundMusic, preloadBackgroundMusic } from "@/lib/bgm";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -24,6 +27,10 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(() => {
+    try { return localStorage.getItem(REMEMBER_KEY) !== "0"; } catch { return true; }
+  });
 
   useEffect(() => {
     preloadBackgroundMusic();
@@ -39,6 +46,10 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
+    try {
+      localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+      sessionStorage.setItem(SESSION_KEY, "1");
+    } catch { /* noop */ }
     toast.success(t("auth.signedIn"));
     navigate({ to: "/dashboard", replace: true });
   }
@@ -99,8 +110,27 @@ function AuthPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="si-pass">{t("auth.password")}</Label>
-                    <Input id="si-pass" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <div className="relative">
+                      <Input id="si-pass" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} className="pr-10" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
+                  <label className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                    />
+                    <span>{t("auth.keepSignedIn")}</span>
+                  </label>
                   <Button type="submit" disabled={loading} className="w-full">
                     <Activity className="mr-2 h-4 w-4" />
                     {loading ? t("auth.signingIn") : t("auth.signIn")}
@@ -120,7 +150,17 @@ function AuthPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="su-pass">{t("auth.password")}</Label>
-                    <Input id="su-pass" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <div className="relative">
+                      <Input id="su-pass" type={showPassword ? "text" : "password"} required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="pr-10" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                     <p
                       className="text-xs text-muted-foreground"
                       dangerouslySetInnerHTML={{ __html: hint }}
