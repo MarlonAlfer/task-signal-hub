@@ -7,7 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Activity } from "lucide-react";
+import { Activity, Eye, EyeOff } from "lucide-react";
+
+const REMEMBER_KEY = "domusliv-remember";
+const SESSION_KEY = "domusliv-session-active";
+
+export function markSessionActive() {
+  try { sessionStorage.setItem(SESSION_KEY, "1"); } catch { /* noop */ }
+}
 import { ensureBackgroundMusic, preloadBackgroundMusic } from "@/lib/bgm";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -24,6 +31,10 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(() => {
+    try { return localStorage.getItem(REMEMBER_KEY) !== "0"; } catch { return true; }
+  });
 
   useEffect(() => {
     preloadBackgroundMusic();
@@ -39,6 +50,10 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
+    try {
+      localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
+      markSessionActive();
+    } catch { /* noop */ }
     toast.success(t("auth.signedIn"));
     navigate({ to: "/dashboard", replace: true });
   }
